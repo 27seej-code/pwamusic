@@ -21,7 +21,13 @@ iOS Safari will not install a PWA or run a service worker from a `file://` path.
 
 ## Using it
 
-- **Add songs**: tap "Add songs" and pick audio files from your Files app (or from "On My iPhone" / iCloud Drive downloads). Files are copied into the app's local storage (IndexedDB), so you only import each song once.
+- **Add songs**: tap "Add songs" to pick individual files. These go straight into your library (no playlist prompt).
+- **Add folder → becomes a playlist**: tap **"Add folder"**, select a folder of audio files, and the app will ask you to name a playlist for that batch (leave the name blank if you just want them in your library, no playlist). All the songs in the folder are imported and added to that playlist in one step.
+  - To grab an entire album folder on iPhone: open the folder in the Files picker, tap **Select** (top right), tap **Select All**, then tap the checkmark/Open button. Any non-audio file swept up (like a `cover.jpg`) is skipped automatically.
+  - **iPhone limitation**: iOS Safari doesn't tell the browser what folder a file came from, so on iPhone you'll always type the playlist name yourself in the prompt. (On desktop browsers that do support folder selection, the folder's name is pre-filled for you automatically.)
+  - Importing into the same playlist name twice just adds the new songs to the existing playlist rather than making a duplicate.
+  - Any common audio format is accepted — MP3, M4A/AAC, WAV, AIFF, FLAC, ALAC, OGG, WMA, etc. Note: a small number of formats (Ogg Vorbis, WMA) aren't actually decodable by iOS's audio engine even though the file can be imported — if one of those fails to play, the app will tell you rather than failing silently. MP3, AAC/M4A, WAV, AIFF, and FLAC all play natively on iPhone.
+  - Files are copied into the app's local storage (IndexedDB) on import, so you only need to do this once per song.
 - **Playlists**: switch to the Playlists tab, create a playlist, then use the **⋯** menu next to any song to add/remove it from playlists.
 - **Playback**: tap any song to play it and queue the rest of that list. Controls: shuffle, repeat (off/all/one), previous/next track, ±15s skip, and a scrub bar.
 - **Search**: the search bar filters whichever list you're looking at (library or an open playlist).
