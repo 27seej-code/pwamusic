@@ -44,26 +44,29 @@
   header{
     padding: calc(var(--safe-top) + 14px) 18px 10px;
     display:flex;
-    align-items:baseline;
+    align-items:center;
     justify-content:space-between;
     flex-shrink:0;
+    gap:10px;
   }
   header h1{
     font-size:22px;
     margin:0;
     font-weight:700;
     letter-spacing:-0.02em;
+    flex-shrink:0;
   }
   header h1 span{color:var(--amber);}
-  #importBtn{
+  #importBtn, #importFolderBtn{
     background:none;
     border:1px solid var(--line);
     color:var(--ink);
-    font-size:13px;
-    padding:7px 12px;
+    font-size:12.5px;
+    padding:7px 10px;
     border-radius:20px;
+    white-space:nowrap;
   }
-  #importBtn:active{background:var(--bg-raised);}
+  #importBtn:active, #importFolderBtn:active{background:var(--bg-raised);}
 
   /* ---- Tabs ---- */
   #tabs{
@@ -356,7 +359,10 @@
 
   <header>
     <h1>Crate<span>.</span></h1>
-    <button id="importBtn">Add songs</button>
+    <div style="display:flex; gap:8px;">
+      <button id="importBtn">Add songs</button>
+      <button id="importFolderBtn">Add folder</button>
+    </div>
   </header>
 
   <div id="tabs">
@@ -378,7 +384,8 @@
     <div id="playlistList" style="display:none"></div>
   </div>
 
-  <input id="fileInput" type="file" accept="audio/*" multiple />
+  <input id="fileInput" type="file" accept="audio/*,.mp3,.m4a,.m4b,.aac,.wav,.wave,.aiff,.aif,.flac,.ogg,.oga,.opus,.wma,.alac,.mid,.midi,.amr,.3gp" multiple />
+  <input id="folderInput" type="file" webkitdirectory directory multiple />
 
   <!-- Mini player -->
   <div id="miniPlayer">
@@ -728,20 +735,109 @@
   }
 
   /* ================= Import ================= */
+  const AUDIO_EXTENSIONS = ["mp3","m4a","m4b","aac","wav","wave","aiff","aif",
+    "flac","ogg","oga","opus","wma","alac","mid","midi","amr","3gp","caf"];
+
+  function isLikelyAudio(file){
+    if (file.type && file.type.startsWith("audio")) return true;
+    const ext = file.name.split(".").pop().toLowerCase();
+    return AUDIO_EXTENSIONS.includes(ext);
+  }
+
   document.getElementById("importBtn").addEventListener("click", () => {
     document.getElementById("fileInput").click();
   });
-  document.getElementById("fileInput").addEventListener("change", async (e) => {
-    const files = Array.from(e.target.files || []);
+  document.getElementById("importFolderBtn").addEventListener("click", () => {
+    document.getElementById("folderInput").click();
+  });
+
+  async function handleImportedFiles(fileList, asPlaylist){
+    const files = Array.from(fileList || []);
+    let added = 0, skipped = 0;
+    const newSongIds = [];
+    let suggestedName = "";
+
     for (const file of files){
-      const song = { name: baseName(file.name), blob: file, addedAt: Date.now() };
+      if (!isLikelyAudio(file)){ skipped++; continue; }
+      // webkitdirectory gives paths like "AlbumName/Track.mp3" — keep just the filename,
+      // but remember the top folder name so we can suggest it as a playlist name.
+      const relPath = file.webkitRelativePath || "";
+      if (relPath && !suggestedName) suggestedName = relPath.split("/")[0];
+      const cleanName = baseName(file.name.split("/").pop());
+      const song = { name: cleanName, blob: file, addedAt: Date.now() };
       const id = await Store.addSong(song);
       song.id = id;
       songs.push(song);
+      newSongIds.push(id);
+      added++;
     }
-    e.target.value = "";
+
     renderCurrentView();
+
+    if (added === 0 && skipped === 0) return;
+    if (added === 0){
+      showToast("No audio files found.");
+      return;
+    }
+
+    if (asPlaylist){
+      const name = prompt(
+        `Name a playlist for these ${added} song${added===1?"":"s"}\n(leave blank to just add them to your library)`,
+        suggestedName
+      );
+      if (name && name.trim()){
+        await addSongsToPlaylistByName(name.trim(), newSongIds);
+        let msg = `Added ${added} song${added===1?"":"s"} to "${name.trim()}".`;
+        if (skipped > 0) msg += ` Skipped ${skipped} non-audio file${skipped===1?"":"s"}.`;
+        showToast(msg);
+        return;
+      }
+    }
+
+    let msg = `Added ${added} song${added===1?"":"s"}.`;
+    if (skipped > 0) msg += ` Skipped ${skipped} non-audio file${skipped===1?"":"s"} (like cover art).`;
+    showToast(msg);
+  }
+
+  async function addSongsToPlaylistByName(name, songIds){
+    let pl = playlists.find(p => p.name.toLowerCase() === name.toLowerCase());
+    if (!pl){
+      pl = { name, songIds: [] };
+      const id = await Store.addPlaylist(pl);
+      pl.id = id;
+      playlists.push(pl);
+    }
+    for (const id of songIds){
+      if (!pl.songIds.includes(id)) pl.songIds.push(id);
+    }
+    await Store.putPlaylist(pl);
+  }
+
+  document.getElementById("fileInput").addEventListener("change", (e) => {
+    handleImportedFiles(e.target.files, false);
+    e.target.value = "";
   });
+  document.getElementById("folderInput").addEventListener("change", (e) => {
+    handleImportedFiles(e.target.files, true);
+    e.target.value = "";
+  });
+
+  function showToast(msg){
+    let toast = document.getElementById("toast");
+    if (!toast){
+      toast = document.createElement("div");
+      toast.id = "toast";
+      toast.style.cssText = `position:fixed; left:50%; bottom:calc(var(--safe-bottom) + 100px);
+        transform:translateX(-50%); background:var(--bg-raised); border:1px solid var(--line);
+        color:var(--ink); padding:10px 16px; border-radius:10px; font-size:13px; z-index:50;
+        max-width:85vw; text-align:center; opacity:0; transition:opacity .25s;`;
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = "1";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { toast.style.opacity = "0"; }, 3200);
+  }
 
   /* ================= Tabs & search ================= */
   document.querySelectorAll(".tab").forEach(tabBtn => {
@@ -866,6 +962,11 @@
   }
 
   audio.addEventListener("ended", () => nextTrack(true));
+  audio.addEventListener("error", () => {
+    if (!currentSongId) return;
+    const song = songById(currentSongId);
+    showToast(`Can't play "${song ? song.name : "this track"}" — unsupported format on this device.`);
+  });
   audio.addEventListener("play", updatePlayButtons);
   audio.addEventListener("pause", updatePlayButtons);
   audio.addEventListener("timeupdate", updateProgress);
