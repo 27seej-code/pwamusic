@@ -1102,7 +1102,7 @@
 
   /* ================= YouTube (via own yt-dlp server) ================= */
   // Filled in at deploy time from the YT_SERVER_URL repo variable (see .github/workflows/pages.yml)
-  const YT_SERVER_BUILD = "__YT_SERVER__";
+  const YT_SERVER_BUILD = "https://doc-appeared-realty-surround.trycloudflare.com";
   const ytServer = () => (YT_SERVER_BUILD.startsWith("__") ? loadPref("ytServer", "") : YT_SERVER_BUILD).replace(/\/+$/, "");
 
   $("ytBtn").addEventListener("click", () => {
