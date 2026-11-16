@@ -3,23 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Crate Player</title>
+<title>Seal Music Player</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="icons/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Crate" />
-<meta name="theme-color" content="#0f0e0c" />
+<meta name="apple-mobile-web-app-title" content="Seal" />
+<meta name="theme-color" content="#0c0f10" />
 <style>
   :root{
-    --bg:#0f0e0c;
-    --bg-raised:#18160f;
-    --line:#2a2620;
-    --ink:#ede9df;
-    --ink-dim:#8f887a;
-    --amber:#e8a33d;
-    --amber-dim:#8a6a34;
-    --danger:#c96a52;
+    --bg:#0c0f10;
+    --bg-raised:#151a1b;
+    --line:#252c2d;
+    --ink:#e9eeec;
+    --ink-dim:#86908e;
+    --accent:#3fd6a8;
+    --accent-dim:#2a7f8a;
+    --danger:#e0566b;
     --safe-top: env(safe-area-inset-top);
     --safe-bottom: env(safe-area-inset-bottom);
   }
@@ -33,336 +34,323 @@
     overscroll-behavior:none;
     user-select:none;
   }
-  #app{
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    height:100dvh;
+  button{font-family:inherit; cursor:pointer;}
+  #app{display:flex; flex-direction:column; height:100vh; height:100dvh;}
+
+  /* ---- Splash ---- */
+  #splash{
+    position:fixed; inset:0; z-index:100;
+    background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition:opacity .45s ease;
+  }
+  #splash.hide{opacity:0; pointer-events:none;}
+  #splash svg{width:min(62vw,260px); height:auto; overflow:visible;
+    filter:drop-shadow(0 0 6px rgba(63,214,168,.45)) drop-shadow(0 0 10px rgba(255,77,109,.25));}
+  #splash .seal{
+    fill:#050707;
+    stroke:url(#sealGrad); stroke-width:3; stroke-linejoin:round; stroke-linecap:round;
+    stroke-dasharray:900; stroke-dashoffset:900;
+    animation:draw 1.3s ease-out forwards;
+  }
+  #splash .eye{fill:url(#sealGrad); opacity:0; animation:fadeIn .4s .9s forwards;}
+  #splash h2{
+    margin:22px 0 0; font-size:22px; font-weight:700; letter-spacing:.02em;
+    background:linear-gradient(90deg,#3fe0a0,#3aa0ff,#ff4d6d);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    opacity:0; animation:fadeIn .5s .7s forwards;
+  }
+  @keyframes draw{to{stroke-dashoffset:0;}}
+  @keyframes fadeIn{to{opacity:1;}}
+  @media (prefers-reduced-motion: reduce){
+    #splash .seal{animation:none; stroke-dashoffset:0;}
+    #splash .eye, #splash h2{animation:none; opacity:1;}
   }
 
   /* ---- Header ---- */
   header{
     padding: calc(var(--safe-top) + 14px) 18px 10px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-shrink:0;
-    gap:10px;
-  }
-  header h1{
-    font-size:22px;
-    margin:0;
-    font-weight:700;
-    letter-spacing:-0.02em;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
     flex-shrink:0;
   }
-  header h1 span{color:var(--amber);}
-  #importBtn, #importFolderBtn{
-    background:none;
-    border:1px solid var(--line);
-    color:var(--ink);
-    font-size:12.5px;
-    padding:7px 10px;
-    border-radius:20px;
-    white-space:nowrap;
+  header h1{font-size:22px; margin:0; font-weight:700; letter-spacing:-0.02em; flex:1;}
+  header h1 span{color:var(--accent);}
+  .pill{
+    background:none; border:1px solid var(--line); color:var(--ink);
+    font-size:13px; padding:7px 12px; border-radius:20px; white-space:nowrap;
   }
-  #importBtn:active, #importFolderBtn:active{background:var(--bg-raised);}
+  .pill.primary{background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:600;}
+  .pill.danger{color:var(--danger); border-color:var(--danger);}
+  .pill:active{opacity:.7;}
 
   /* ---- Tabs ---- */
-  #tabs{
-    display:flex;
-    gap:6px;
-    padding: 0 18px 10px;
-    flex-shrink:0;
-  }
+  #tabs{display:flex; gap:6px; padding:0 18px 10px; flex-shrink:0;}
   .tab{
-    background:none;
-    border:none;
-    color:var(--ink-dim);
-    font-size:15px;
-    font-weight:600;
-    padding:6px 2px;
-    margin-right:16px;
+    background:none; border:none; color:var(--ink-dim);
+    font-size:15px; font-weight:600; padding:6px 2px; margin-right:16px;
     border-bottom:2px solid transparent;
   }
-  .tab.active{color:var(--ink); border-bottom-color:var(--amber);}
+  .tab.active{color:var(--ink); border-bottom-color:var(--accent);}
 
   /* ---- Search ---- */
-  #searchWrap{padding: 0 18px 10px; flex-shrink:0;}
+  #searchWrap{padding:0 18px 10px; flex-shrink:0;}
   #searchInput{
-    width:100%;
-    background:var(--bg-raised);
-    border:1px solid var(--line);
-    color:var(--ink);
-    padding:10px 12px;
-    border-radius:10px;
-    font-size:15px;
+    width:100%; background:var(--bg-raised); border:1px solid var(--line); color:var(--ink);
+    padding:10px 12px; border-radius:10px; font-size:15px;
   }
   #searchInput::placeholder{color:var(--ink-dim);}
 
-  /* ---- Scroll area ---- */
-  #view{
-    flex:1;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-    padding-bottom:110px;
+  /* ---- Select bar ---- */
+  #selectBar{
+    display:none; align-items:center; gap:8px; padding:0 18px 10px; flex-shrink:0;
+    font-size:13px; color:var(--ink-dim);
   }
+  #selectBar.show{display:flex;}
+  #selectCount{flex:1;}
+
+  /* ---- Scroll area ---- */
+  #view{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:110px;}
+  #view.dragover{outline:2px dashed var(--accent); outline-offset:-8px;}
 
   .row{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    padding:11px 18px;
-    border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:12px;
+    padding:11px 18px; border-bottom:1px solid var(--line);
   }
-  .row .idx{
-    width:20px;
-    text-align:right;
-    color:var(--ink-dim);
-    font-size:12px;
-    font-variant-numeric:tabular-nums;
-  }
+  .row .idx{width:22px; text-align:right; color:var(--ink-dim); font-size:12px; font-variant-numeric:tabular-nums;}
   .row .meta{flex:1; min-width:0;}
-  .row .title{
-    font-size:15px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
+  .row .title{font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .row .sub{font-size:11px; color:var(--ink-dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
+  .row.playing .title, .row.playing .idx{color:var(--accent);}
+  .art{
+    width:44px; height:44px; border-radius:8px; flex-shrink:0; position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    font-size:19px; font-weight:700; color:#fff; background-size:cover; background-position:center;
   }
-  .row.playing .title{color:var(--amber);}
-  .row .sub{
-    font-size:12px;
-    color:var(--ink-dim);
-    margin-top:2px;
+  .art img{width:100%; height:100%; object-fit:cover; display:block;}
+  .row.playing .art::after{
+    content:"♪"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.55); color:var(--accent); font-size:18px;
   }
-  .row .more{
-    background:none;
-    border:none;
-    color:var(--ink-dim);
-    font-size:20px;
-    padding:4px 8px;
-  }
+  .row .more{background:none; border:none; color:var(--ink-dim); font-size:20px; padding:4px 8px;}
+  .row .chk{display:none; width:20px; height:20px; border-radius:50%; border:2px solid var(--ink-dim); flex-shrink:0;}
+  .selecting .row .chk{display:block;}
+  .selecting .row .idx, .selecting .row .more{display:none;}
+  .row.sel .chk{background:var(--accent); border-color:var(--accent);}
 
-  .empty{
-    padding:60px 30px;
-    text-align:center;
-    color:var(--ink-dim);
-    font-size:14px;
-    line-height:1.6;
-  }
+  .empty{padding:60px 30px; text-align:center; color:var(--ink-dim); font-size:14px; line-height:1.6;}
   .empty b{color:var(--ink); display:block; font-size:16px; margin-bottom:6px;}
+  .empty .pill{margin-top:14px;}
 
   #playlistList .row{cursor:pointer;}
   #playlistList .plname{font-size:15px; flex:1;}
   #playlistList .plcount{color:var(--ink-dim); font-size:13px;}
 
-  #newPlaylistBtn{
-    margin:14px 18px;
-    background:var(--bg-raised);
-    border:1px dashed var(--line);
-    color:var(--amber);
-    padding:12px;
-    width:calc(100% - 36px);
-    border-radius:10px;
-    font-size:14px;
-    font-weight:600;
+  .wideBtn{
+    margin:14px 18px; background:var(--bg-raised); border:1px dashed var(--line);
+    color:var(--accent); padding:12px; width:calc(100% - 36px);
+    border-radius:10px; font-size:14px; font-weight:600;
   }
 
-  #plHeader{
-    display:none;
-    align-items:center;
-    gap:10px;
-    padding:4px 18px 12px;
-  }
+  #plHeader{display:none; align-items:center; gap:10px; padding:4px 18px 12px;}
   #plHeader.show{display:flex;}
-  #plBack{background:none;border:none;color:var(--amber);font-size:15px;padding:4px 4px 4px 0;}
-  #plTitle{font-size:16px;font-weight:700;flex:1;}
-  #plDeleteBtn{background:none;border:none;color:var(--danger);font-size:13px;}
+  #plBack{background:none;border:none;color:var(--accent);font-size:15px;padding:4px 4px 4px 0;}
+  #plTitle{font-size:16px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #plHeader .lnk{background:none;border:none;font-size:13px;color:var(--accent);}
+  #plDeleteBtn{color:var(--danger) !important;}
+
+  /* ---- Mode badges ---- */
+  .modes{display:inline-flex; gap:4px; vertical-align:middle;}
+  .badge{
+    font-size:9px; font-weight:700; letter-spacing:.06em;
+    padding:1px 5px; border-radius:6px;
+    background:var(--accent); color:var(--bg);
+  }
 
   /* ---- Mini player ---- */
   #miniPlayer{
-    position:fixed;
-    left:10px; right:10px;
-    bottom: calc(var(--safe-bottom) + 8px);
-    background:var(--bg-raised);
-    border:1px solid var(--line);
-    border-radius:14px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:9px 10px;
-    transform:translateY(140%);
-    transition:transform .25s ease;
-    z-index:20;
+    position:fixed; left:10px; right:10px; bottom:calc(var(--safe-bottom) + 8px);
+    background:var(--bg-raised); border:1px solid var(--line); border-radius:14px;
+    display:flex; align-items:center; gap:10px; padding:9px 10px;
+    transform:translateY(140%); transition:transform .25s ease; z-index:20;
   }
   #miniPlayer.show{transform:translateY(0);}
   #miniArt{
-    width:38px; height:38px; border-radius:8px;
-    background:linear-gradient(160deg,var(--amber),var(--amber-dim));
-    flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    font-size:16px;
+    width:38px; height:38px; border-radius:8px; flex-shrink:0; overflow:hidden;
+    background:linear-gradient(160deg,var(--accent),var(--accent-dim));
+    display:flex;align-items:center;justify-content:center; font-size:16px; font-weight:700; color:#fff;
   }
+  #miniArt img{width:100%; height:100%; object-fit:cover;}
   #miniMeta{flex:1; min-width:0;}
   #miniTitle{font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  #miniSub{font-size:11px; color:var(--ink-dim);}
+  #miniSub{font-size:11px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .miniBtn{background:none;border:none;color:var(--ink);font-size:20px;padding:6px 8px;}
 
-  /* ---- Full player sheet ---- */
+  /* ---- Full player ---- */
   #fullPlayer{
-    position:fixed; inset:0;
-    background:var(--bg);
-    transform:translateY(100%);
-    transition:transform .3s cubic-bezier(.32,.72,0,1);
-    z-index:30;
-    display:flex;
-    flex-direction:column;
+    position:fixed; inset:0; background:var(--bg);
+    transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1);
+    z-index:30; display:flex; flex-direction:column;
     padding: calc(var(--safe-top) + 10px) 26px calc(var(--safe-bottom) + 20px);
+    visibility:hidden;
   }
-  #fullPlayer.show{transform:translateY(0);}
-  #collapseBtn{
-    align-self:center;
-    width:38px; height:5px;
-    background:var(--line);
-    border:none;
-    border-radius:3px;
-    margin-bottom:24px;
-  }
-  #artWrap{
-    flex:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:0;
-  }
+  #fullPlayer.show{transform:translateY(0); visibility:visible;}
+  #fpTop{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  #fpBack{background:none; border:1px solid var(--line); color:var(--ink); font-size:14px; font-weight:600; padding:7px 14px; border-radius:20px;}
+  #fpBack:active{opacity:.7;}
+  #fpTop .spacer{width:70px;}
+  #collapseBtn{align-self:center; width:38px; height:5px; background:var(--line); border:none; border-radius:3px; margin:0; padding:0;}
+  #artWrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0;}
   #bigArt{
-    width:min(70vw, 300px);
-    aspect-ratio:1;
-    border-radius:16px;
-    background:radial-gradient(circle at 35% 30%, var(--amber), var(--amber-dim) 70%);
+    width:min(70vw, 300px); aspect-ratio:1; border-radius:16px;
+    background:radial-gradient(circle at 35% 30%, var(--accent), var(--accent-dim) 70%);
     box-shadow:0 20px 50px rgba(0,0,0,.5);
     display:flex;align-items:center;justify-content:center;
   }
-  #bigArt::after{
-    content:"";
-    width:34%; height:34%;
-    border-radius:50%;
-    background:var(--bg);
-    box-shadow: 0 0 0 6px rgba(0,0,0,.15) inset;
-  }
-  #fpTitle{
-    font-size:20px; font-weight:700;
-    margin-top:22px;
-    text-align:center;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
-  #fpSub{
-    text-align:center;
-    color:var(--ink-dim);
-    font-size:13px;
-    margin-top:4px;
-  }
-  #seekRow{margin-top:26px;}
-  #seekBar{
-    width:100%;
-    -webkit-appearance:none;
-    height:4px;
-    border-radius:2px;
-    background:var(--line);
-    accent-color:var(--amber);
-  }
-  #timeRow{
-    display:flex; justify-content:space-between;
-    font-size:11px; color:var(--ink-dim);
-    margin-top:4px;
-    font-variant-numeric:tabular-nums;
-  }
-  #controlsRow{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-top:22px;
-  }
-  #controlsRow button{
-    background:none; border:none; color:var(--ink);
-  }
-  .ctrl-side{font-size:20px; color:var(--ink-dim); width:44px;}
-  .ctrl-side.active{color:var(--amber);}
+  #bigArt::after{content:""; width:34%; height:34%; border-radius:50%; background:var(--bg); box-shadow:0 0 0 6px rgba(0,0,0,.15) inset;}
+  #bigArt.hasArt{background-size:cover; background-position:center;}
+  #bigArt.hasArt::after, #bigArt.letter::after{display:none;}
+  #bigArt.letter{font-size:min(30vw,130px); font-weight:800; color:rgba(255,255,255,.92);}
+  #fpInfo{text-align:center; color:var(--ink-dim); font-size:11px; margin-top:4px; min-height:14px; font-variant-numeric:tabular-nums;}
+  #fpTitle{font-size:20px; font-weight:700; margin-top:22px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  #fpSub{text-align:center; color:var(--ink-dim); font-size:13px; margin-top:4px; min-height:18px;}
+  #seekRow{margin-top:22px;}
+  #seekBar{width:100%; height:4px; accent-color:var(--accent);}
+  #timeRow{display:flex; justify-content:space-between; font-size:11px; color:var(--ink-dim); margin-top:4px; font-variant-numeric:tabular-nums;}
+  #controlsRow{display:flex; align-items:center; justify-content:space-between; margin-top:22px;}
+  #controlsRow button{background:none; border:none; color:var(--ink); padding:0;}
+  .ctrl-side{width:44px; height:44px; color:var(--ink-dim) !important; position:relative; display:flex; align-items:center; justify-content:center; border-radius:12px !important;}
+  .ctrl-side svg{width:22px; height:22px;}
+  .ctrl-side.active{color:var(--accent) !important; background:rgba(63,214,168,.14) !important;}
+  .ctrl-side.active::after{content:""; position:absolute; bottom:3px; width:4px; height:4px; border-radius:50%; background:var(--accent);}
+  .ctrl-side .one{position:absolute; top:4px; right:5px; font-size:9px; font-weight:800; display:none;}
+  .ctrl-side.mode-one .one{display:block;}
   .ctrl-skip{font-size:22px; width:40px;}
-  .ctrl-seek{font-size:20px; width:40px;}
+  .ctrl-seek{font-size:15px; width:40px;}
   #playBtn{
-    width:64px; height:64px;
-    border-radius:50%;
-    background:var(--amber);
-    color:var(--bg);
-    font-size:24px;
-    display:flex;align-items:center;justify-content:center;
+    width:64px; height:64px; border-radius:50% !important;
+    background:var(--accent) !important; color:var(--bg) !important;
+    font-size:24px; display:flex;align-items:center;justify-content:center;
   }
-  #bottomRow{
-    display:flex;
-    justify-content:center;
-    margin-top:26px;
+  #bottomRow{display:flex; justify-content:space-around; margin-top:24px;}
+  #bottomRow button{color:var(--ink-dim); font-size:13px; background:none; border:none;}
+  #bottomRow #boostBtn.on{color:var(--accent);}
+
+  /* ---- Settings / boost ---- */
+  .setRow{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 2px; border-bottom:1px solid var(--line); font-size:15px;}
+  .setRow small{display:block; color:var(--ink-dim); font-size:12px; margin-top:2px;}
+  .setRow input[type=checkbox]{width:22px; height:22px; accent-color:var(--accent); flex-shrink:0;}
+  .setRow input[type=color]{width:40px; height:30px; padding:0; border:1px solid var(--line); border-radius:6px; background:none; flex-shrink:0;}
+  .setRow input[type=range]{flex:1; accent-color:var(--accent);}
+  .setRow output{width:22px; text-align:right; font-variant-numeric:tabular-nums; color:var(--accent); font-weight:700;}
+
+  /* Song colour tint: --tint is taken from the playing song's artwork */
+  body.tint:not(.fx){background:color-mix(in srgb, var(--tint) 20%, #0c0f10); transition:background .6s;}
+  body.tint:not(.fx) #app{background:transparent;}
+  body.tint:not(.fx) #fullPlayer{background:linear-gradient(180deg, color-mix(in srgb, var(--tint) 45%, #0c0f10), color-mix(in srgb, var(--tint) 12%, #0c0f10) 75%);}
+
+  /* ---- Queue: every song its own card, every section its own panel ---- */
+  .qSec{border-radius:14px; padding:4px 10px 8px; margin:10px 0; background:var(--bg);}
+  .qSec.now{background:color-mix(in srgb, var(--accent) 16%, var(--bg));}
+  .qSec.next{background:color-mix(in srgb, #3aa0ff 12%, var(--bg));}
+  .qSec.later{background:color-mix(in srgb, #ff4d6d 9%, var(--bg));}
+  .qSec h4{margin:8px 2px 6px !important;}
+  .qSec .sheetItem{border-bottom:none; border-left:4px solid var(--qc, var(--accent)); border-radius:10px; margin:6px 0; padding:11px 10px; background:var(--bg-raised);}
+  .qSec .sheetItem:nth-child(odd){background:color-mix(in srgb, var(--bg-raised) 92%, #fff);}
+  .qSec .qNum{flex:none !important; width:20px; color:var(--ink-dim); font-size:12px; font-variant-numeric:tabular-nums;}
+
+  /* Boost themes: --boost is set from JS (user-picked colour per boost) */
+  body.fx{
+    --accent:var(--boost); --accent-dim:var(--boost);
+    background:color-mix(in srgb, var(--boost) 9%, #0c0f10);
   }
-  #addToPlaylistFromPlayer{
-    color:var(--ink-dim);
-    font-size:13px;
-    background:none;border:none;
+  body.fx #app, body.fx #fullPlayer{background:transparent;}
+  body.fx #fullPlayer{background:color-mix(in srgb, var(--boost) 9%, #0c0f10);}
+  body.fx .pill.primary, body.fx #playBtn{color:#0c0f10 !important;}
+  #boostGlow{
+    position:fixed; inset:0; pointer-events:none; z-index:45; opacity:0;
+    box-shadow:inset 0 0 90px 12px var(--boost, transparent);
+    transition:opacity .4s;
   }
+  body.fx #boostGlow{opacity:.55;}
+  body.fx.pulse #boostGlow{animation:boostPulse 1s ease-in-out infinite;}
+  @keyframes boostPulse{0%,100%{opacity:.2;} 50%{opacity:.9;}}
+  @media (prefers-reduced-motion: reduce){ body.fx.pulse #boostGlow{animation:none;} }
 
   /* ---- Action sheet ---- */
-  #sheetOverlay{
-    position:fixed; inset:0;
-    background:rgba(0,0,0,.5);
-    z-index:40;
-    display:none;
-  }
+  #sheetOverlay{position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:40; display:none;}
   #sheetOverlay.show{display:block;}
   #sheet{
-    position:absolute; left:0; right:0; bottom:0;
-    background:var(--bg-raised);
-    border-radius:16px 16px 0 0;
-    padding:14px 18px calc(var(--safe-bottom) + 14px);
-    max-height:70vh;
-    overflow-y:auto;
+    position:absolute; left:0; right:0; bottom:0; background:var(--bg-raised);
+    border-radius:16px 16px 0 0; padding:14px 18px calc(var(--safe-bottom) + 14px);
+    max-height:75vh; overflow-y:auto;
   }
-  #sheet h3{margin:6px 0 12px; font-size:15px; color:var(--ink-dim); font-weight:600;}
-  .sheetItem{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:12px 2px;
-    border-bottom:1px solid var(--line);
-    font-size:15px;
-  }
-  .sheetItem input[type=checkbox]{width:20px; height:20px; accent-color:var(--amber);}
-  .sheetAction{
-    padding:14px 2px;
-    font-size:15px;
-    color:var(--ink);
-  }
+  #sheet h3{margin:6px 0 12px; font-size:15px; color:var(--ink-dim); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  #sheet h4{margin:16px 0 4px; font-size:12px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em;}
+  .sheetItem{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 2px; border-bottom:1px solid var(--line); font-size:15px;}
+  .sheetItem span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sheetItem input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent);}
+  .sheetItem button{background:none; border:none; color:var(--ink-dim); font-size:16px; padding:2px 6px;}
+  .sheetAction{padding:14px 2px; font-size:15px; color:var(--ink); border-bottom:1px solid var(--line);}
   .sheetAction.danger{color:var(--danger);}
-  #sheetClose{
-    display:block;
-    width:100%;
-    margin-top:10px;
-    padding:12px;
-    background:var(--line);
-    border:none;
-    border-radius:10px;
-    color:var(--ink);
-    font-size:14px;
+  .ytRow{display:flex; gap:8px; margin-bottom:8px;}
+  .ytRow input{flex:1; min-width:0; padding:10px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--ink); font-size:15px;}
+  .ytRes{display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--line);}
+  .ytRes img{width:64px; height:36px; object-fit:cover; border-radius:4px; flex:none;}
+  .ytRes div{flex:1; min-width:0;}
+  .ytRes b,.ytRes small{display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ytRes b{font-weight:500; font-size:14px;}
+  .ytRes small{color:var(--ink-dim); font-size:12px;}
+  .ytRes em{font-style:normal; color:var(--accent); font-size:13px; flex:none;}
+  .sheetNote{color:var(--ink-dim); font-size:13px; padding:10px 2px;}
+  #sheetClose{display:block; width:100%; margin-top:12px; padding:12px; background:var(--line); border:none; border-radius:10px; color:var(--ink); font-size:14px;}
+
+  #toast{
+    position:fixed; left:50%; bottom:calc(var(--safe-bottom) + 80px); transform:translateX(-50%);
+    background:var(--ink); color:var(--bg); font-size:13px; padding:8px 14px; border-radius:20px;
+    z-index:50; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap;
   }
+  #toast.show{opacity:1;}
+
+  /* ---- Update prompt ---- */
+  #updateOverlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:60; display:none; align-items:center; justify-content:center; padding:16px;}
+  #updateOverlay.show{display:flex;}
+  #updateBox{width:100%; max-width:340px; background:var(--bg-raised); border:1px solid var(--line); border-radius:16px; padding:20px; text-align:center;}
+  #updateBox h3{margin:0 0 6px; font-size:17px;}
+  #updateBox p{margin:0 0 16px; color:var(--ink-dim); font-size:14px;}
+  #updateBox .row{display:flex; gap:10px;}
+  #updateBox button{flex:1; padding:12px; border:none; border-radius:10px; font-size:15px; font-weight:600;}
+  #updateLater{background:var(--line); color:var(--ink);}
+  #updateNow{background:var(--accent); color:#0c0f10;}
 
   input[type=file]{display:none;}
 </style>
 </head>
 <body>
+
+<!-- Splash: drawn once, then removed from the DOM -->
+<div id="splash" aria-hidden="true">
+  <svg viewBox="0 0 200 120">
+    <defs>
+      <linearGradient id="sealGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#3fe0a0"/>
+        <stop offset=".5" stop-color="#3aa0ff"/>
+        <stop offset="1" stop-color="#ff4d6d"/>
+      </linearGradient>
+    </defs>
+    <path class="seal" d="M14 88 L3 74 L24 81 C42 70 72 66 100 70 C120 72 134 62 140 46 C144 34 152 25 165 25 C177 25 185 31 187 38 L195 40 C198 44 193 47 186 47 C182 55 177 63 173 76 C170 88 164 96 150 100 L147 110 L134 101 C110 105 60 103 30 96 L8 104 Z"/>
+    <circle class="eye" cx="170" cy="34" r="2.6"/>
+  </svg>
+  <h2>Seal music player</h2>
+</div>
+
 <div id="app">
 
   <header>
-    <h1>Crate<span>.</span></h1>
-    <div style="display:flex; gap:8px;">
-      <button id="importBtn">Add songs</button>
-      <button id="importFolderBtn">Add folder</button>
-    </div>
+    <h1>Seal<span>.</span></h1>
+    <button class="pill" id="settingsBtn" aria-label="Settings">⚙</button>
+    <button class="pill" id="selectBtn">Select</button>
+    <button class="pill" id="ytBtn">YouTube</button>
+    <button class="pill primary" id="importBtn">+ Add</button>
   </header>
 
   <div id="tabs">
@@ -371,21 +359,29 @@
   </div>
 
   <div id="searchWrap">
-    <input id="searchInput" type="text" placeholder="Search songs" />
+    <input id="searchInput" type="search" placeholder="Search songs" />
+  </div>
+
+  <div id="selectBar">
+    <span id="selectCount">0 selected</span>
+    <button class="pill" id="selAllBtn">All</button>
+    <button class="pill" id="selQueueBtn">Queue</button>
+    <button class="pill danger" id="selDeleteBtn">Delete</button>
   </div>
 
   <div id="view">
     <div id="plHeader">
       <button id="plBack">‹ Playlists</button>
       <div id="plTitle"></div>
-      <button id="plDeleteBtn">Delete</button>
+      <button class="lnk" id="plAddBtn">+ Songs</button>
+      <button class="lnk" id="plDeleteBtn">Delete</button>
     </div>
     <div id="libraryList"></div>
     <div id="playlistList" style="display:none"></div>
   </div>
 
-  <input id="fileInput" type="file" accept="audio/*,.mp3,.m4a,.m4b,.aac,.wav,.wave,.aiff,.aif,.flac,.ogg,.oga,.opus,.wma,.alac,.mid,.midi,.amr,.3gp" multiple />
-  <input id="folderInput" type="file" webkitdirectory directory multiple />
+  <input id="fileInput" type="file" multiple />
+  <input id="folderInput" type="file" webkitdirectory multiple />
 
   <!-- Mini player -->
   <div id="miniPlayer">
@@ -400,42 +396,68 @@
 
   <!-- Full player -->
   <div id="fullPlayer">
-    <button id="collapseBtn"></button>
+    <div id="fpTop">
+      <button id="fpBack">‹ Library</button>
+      <button id="collapseBtn" aria-label="Close player"></button>
+      <span class="spacer"></span>
+    </div>
     <div id="artWrap"><div id="bigArt"></div></div>
     <div id="fpTitle">—</div>
     <div id="fpSub">Nothing playing</div>
+    <div id="fpInfo"></div>
     <div id="seekRow">
-      <input id="seekBar" type="range" min="0" max="100" value="0" />
+      <input id="seekBar" type="range" min="0" max="1000" value="0" />
       <div id="timeRow"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
     </div>
     <div id="controlsRow">
-      <button class="ctrl-side" id="shuffleBtn" title="Shuffle">🔀</button>
-      <button class="ctrl-seek" id="prevBtn" title="Previous">⏮</button>
-      <button class="ctrl-seek" id="rewindBtn" title="Back 15s">15⟲</button>
+      <button class="ctrl-side" id="shuffleBtn" title="Shuffle" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+      </button>
+      <button class="ctrl-skip" id="prevBtn" title="Previous">⏮</button>
+      <button class="ctrl-seek" id="rewindBtn" title="Back 15s">-15</button>
       <button id="playBtn">▶︎</button>
-      <button class="ctrl-seek" id="forwardBtn" title="Forward 15s">⟳15</button>
-      <button class="ctrl-seek" id="nextBtn" title="Next">⏭</button>
-      <button class="ctrl-side" id="repeatBtn" title="Repeat">🔁</button>
+      <button class="ctrl-seek" id="forwardBtn" title="Forward 15s">+15</button>
+      <button class="ctrl-skip" id="nextBtn" title="Next">⏭</button>
+      <button class="ctrl-side" id="repeatBtn" title="Loop: off" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        <span class="one">1</span>
+      </button>
     </div>
     <div id="bottomRow">
-      <button id="addToPlaylistFromPlayer">Add to playlist</button>
+      <button id="queueBtn">☰ Queue</button>
+      <button id="boostBtn">⚡ Boost</button>
+      <button id="stopBtn">■ Stop</button>
+      <button id="addToPlaylistFromPlayer">+ Playlist</button>
     </div>
   </div>
 
-  <div id="sheetOverlay">
-    <div id="sheet"></div>
-  </div>
-
+  <div id="sheetOverlay"><div id="sheet"></div></div>
+  <div id="toast"></div>
+  <div id="updateOverlay"><div id="updateBox">
+    <h3>Update available</h3>
+    <p>A new version of Seal is ready. Updating in <b id="updateCount">30</b>s.</p>
+    <div class="row"><button id="updateLater">Later</button><button id="updateNow">Update now</button></div>
+  </div></div>
 </div>
+<div id="boostGlow"></div>
 
 <audio id="audio" preload="metadata"></audio>
 
 <script>
 (() => {
   "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  /* ================= Splash ================= */
+  const splash = $("splash");
+  setTimeout(() => {
+    splash.classList.add("hide");
+    setTimeout(() => splash.remove(), 500); // remove so nothing keeps animating
+  }, 1900);
+  splash.addEventListener("click", () => splash.classList.add("hide"));
 
   /* ================= IndexedDB ================= */
-  const DB_NAME = "cratePlayerDB";
+  const DB_NAME = "cratePlayerDB"; // kept so existing libraries carry over
   const DB_VERSION = 1;
   let db;
 
@@ -444,86 +466,95 @@
       const req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = (e) => {
         const d = e.target.result;
-        if (!d.objectStoreNames.contains("songs")) {
-          d.createObjectStore("songs", { keyPath: "id", autoIncrement: true });
-        }
-        if (!d.objectStoreNames.contains("playlists")) {
-          d.createObjectStore("playlists", { keyPath: "id", autoIncrement: true });
-        }
+        if (!d.objectStoreNames.contains("songs")) d.createObjectStore("songs", { keyPath: "id", autoIncrement: true });
+        if (!d.objectStoreNames.contains("playlists")) d.createObjectStore("playlists", { keyPath: "id", autoIncrement: true });
       };
       req.onsuccess = (e) => resolve(e.target.result);
       req.onerror = (e) => reject(e.target.error);
     });
   }
-
-  function tx(storeName, mode){
-    return db.transaction(storeName, mode).objectStore(storeName);
-  }
+  function tx(storeName, mode){ return db.transaction(storeName, mode).objectStore(storeName); }
   function reqToPromise(req){
-    return new Promise((res, rej) => {
-      req.onsuccess = () => res(req.result);
-      req.onerror = () => rej(req.error);
-    });
+    return new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+  }
+  function txDone(t){
+    return new Promise((res, rej) => { t.oncomplete = res; t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); });
   }
 
   const Store = {
     addSong(song){ return reqToPromise(tx("songs","readwrite").add(song)); },
     allSongs(){ return reqToPromise(tx("songs","readonly").getAll()); },
-    deleteSong(id){ return reqToPromise(tx("songs","readwrite").delete(id)); },
-    getSong(id){ return reqToPromise(tx("songs","readonly").get(id)); },
-
     addPlaylist(pl){ return reqToPromise(tx("playlists","readwrite").add(pl)); },
     allPlaylists(){ return reqToPromise(tx("playlists","readonly").getAll()); },
     putPlaylist(pl){ return reqToPromise(tx("playlists","readwrite").put(pl)); },
     deletePlaylist(id){ return reqToPromise(tx("playlists","readwrite").delete(id)); },
+    // delete many songs + update affected playlists in one transaction
+    deleteSongs(ids, changedPlaylists){
+      const t = db.transaction(["songs","playlists"], "readwrite");
+      const ss = t.objectStore("songs"), ps = t.objectStore("playlists");
+      ids.forEach(id => ss.delete(id));
+      changedPlaylists.forEach(p => ps.put(p));
+      return txDone(t);
+    },
   };
 
+  /* ================= Settings (persisted) ================= */
+  function loadPref(k, def){ try { const v = localStorage.getItem(k); return v === null ? def : v; } catch { return def; } }
+  function savePref(k, v){ try { localStorage.setItem(k, v); } catch {} }
+
   /* ================= State ================= */
-  let songs = [];        // [{id, name, blob, addedAt}]
-  let playlists = [];    // [{id, name, songIds:[]}]
+  let songs = [];
+  let playlists = [];
   let currentTab = "library";
-  let openPlaylistId = null;     // when viewing a playlist's songs
+  let openPlaylistId = null;
   let searchTerm = "";
+  let visibleIds = [];           // ids of songs currently shown (for select-all)
 
-  let queue = [];         // array of song ids, the current playable context
-  let queueLabel = "";    // label shown under title, e.g. playlist name
-  let playOrder = [];      // order of indices into queue (identity or shuffled)
-  let orderPos = -1;       // position within playOrder
+  let ctx = [];                  // context song ids (library / playlist)
+  let ctxLabel = "";
+  let playOrder = [];            // indices into ctx
+  let orderPos = -1;
+  let upNext = [];               // user queue, plays before continuing ctx
   let currentSongId = null;
-  let shuffleOn = false;
-  let repeatMode = "off";  // off | all | one
+  let shuffleOn = loadPref("shuffle", "0") === "1";
+  let repeatMode = loadPref("repeat", "off"); // off | all | one
+  if (!["off","all","one"].includes(repeatMode)) repeatMode = "off";
   let currentObjectUrl = null;
-  let sheetContextSongId = null; // song currently targeted by the action sheet
 
-  const audio = document.getElementById("audio");
+  let selecting = false;
+  const selected = new Set();
+
+  const audio = $("audio");
 
   /* ================= Helpers ================= */
-  function baseName(filename){
-    return filename.replace(/\.[^/.]+$/, "");
-  }
+  const baseName = (f) => f.replace(/\.[^/.]+$/, "");
   function fmtTime(sec){
     if (!isFinite(sec) || sec < 0) sec = 0;
-    const m = Math.floor(sec/60);
-    const s = Math.floor(sec%60).toString().padStart(2,"0");
-    return `${m}:${s}`;
+    return `${Math.floor(sec/60)}:${Math.floor(sec%60).toString().padStart(2,"0")}`;
   }
-  function songById(id){ return songs.find(s => s.id === id); }
-  function playlistById(id){ return playlists.find(p => p.id === id); }
-
-  function shuffledIndices(n){
+  const songById = (id) => songs.find(s => s.id === id);
+  const playlistById = (id) => playlists.find(p => p.id === id);
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function shuffledIndices(n, firstIdx){
     const arr = Array.from({length:n}, (_,i)=>i);
-    for (let i = arr.length-1; i>0; i--){
-      const j = Math.floor(Math.random()*(i+1));
-      [arr[i],arr[j]] = [arr[j],arr[i]];
-    }
+    for (let i = n-1; i>0; i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]] = [arr[j],arr[i]]; }
+    // keep the current song first so the rest of the shuffle is still ahead
+    if (firstIdx >= 0){ const p = arr.indexOf(firstIdx); [arr[0],arr[p]] = [arr[p],arr[0]]; }
     return arr;
   }
+  let toastTimer;
+  function toast(msg){
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+  }
+  function safePlay(){ const p = audio.play(); if (p && p.catch) p.catch(() => {}); }
 
-  /* ================= Rendering: Library ================= */
-  const libraryListEl = document.getElementById("libraryList");
-  const playlistListEl = document.getElementById("playlistList");
-  const plHeaderEl = document.getElementById("plHeader");
-  const plTitleEl = document.getElementById("plTitle");
+  /* ================= Rendering ================= */
+  const libraryListEl = $("libraryList");
+  const playlistListEl = $("playlistList");
+  const plHeaderEl = $("plHeader");
 
   function filteredSongs(list){
     if (!searchTerm) return list;
@@ -531,312 +562,669 @@
     return list.filter(s => s.name.toLowerCase().includes(t));
   }
 
-  function renderLibrary(){
-    const list = filteredSongs(songs).sort((a,b)=>a.name.localeCompare(b.name));
-    if (list.length === 0){
-      libraryListEl.innerHTML = songs.length === 0
-        ? `<div class="empty"><b>No songs yet</b>Tap "Add songs" to import audio files from your Files app.</div>`
-        : `<div class="empty">No matches for "${escapeHtml(searchTerm)}"</div>`;
-      return;
-    }
-    libraryListEl.innerHTML = list.map((s,i) => rowHtml(s, i+1, list.map(x=>x.id))).join("");
-    attachRowHandlers(libraryListEl, list.map(s=>s.id), "Library");
+  /* ---- artwork: saved YouTube thumbnail, else first letter on a colour from the name ---- */
+  const artUrls = new Map();
+  function artUrl(song){
+    if (!song || !song.art) return null;
+    if (!artUrls.has(song.id)) artUrls.set(song.id, URL.createObjectURL(song.art));
+    return artUrls.get(song.id);
+  }
+  function dropArtUrl(id){ const u = artUrls.get(id); if (u){ URL.revokeObjectURL(u); artUrls.delete(id); } }
+  function songLetter(song){ const m = (song.name || "").match(/[\p{L}\p{N}]/u); return m ? m[0].toUpperCase() : "♪"; }
+  // HIDE SONG MAX: every song name in the app shows only its first letter
+  const privacy = { hide: loadPref("hideSong", "0") === "1", max: loadPref("hideSongMax", "0") === "1", tint: loadPref("artTint", "1") === "1" };
+  const dispName = (song) => !song ? "?" : privacy.max ? songLetter(song) + " ••••" : song.name;
+  function songHue(song){ let h = 0; for (const c of song.name || "") h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+  function letterBg(song){ const h = songHue(song); return `linear-gradient(150deg,hsl(${h} 60% 45%),hsl(${(h+40)%360} 55% 28%))`; }
+  function artHtml(song){
+    const u = artUrl(song);
+    return u ? `<div class="art"><img src="${u}" alt="" loading="lazy"></div>`
+             : `<div class="art" style="background:${letterBg(song)}">${escapeHtml(songLetter(song))}</div>`;
   }
 
-  function rowHtml(song, idx, ctxIds){
-    const isPlaying = song.id === currentSongId;
-    return `
-      <div class="row ${isPlaying ? "playing":""}" data-id="${song.id}">
-        <div class="idx">${isPlaying ? "♪" : idx}</div>
-        <div class="meta">
-          <div class="title">${escapeHtml(song.name)}</div>
-        </div>
+  function fmtSize(bytes){
+    if (!bytes) return "";
+    return bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(bytes / 1024)) + " KB";
+  }
+  function fmtAdded(ts){
+    if (!ts) return "";
+    const d = new Date(ts), now = new Date();
+    const sameYear = d.getFullYear() === now.getFullYear();
+    return "Added " + d.toLocaleDateString(undefined, sameYear ? { month:"short", day:"numeric" } : { month:"short", day:"numeric", year:"numeric" })
+      + ", " + d.toLocaleTimeString(undefined, { hour:"numeric", minute:"2-digit" });
+  }
+  function songInfo(song){
+    return [song.duration ? fmtTime(song.duration) : "", fmtSize(song.blob && song.blob.size), fmtAdded(song.addedAt)].filter(Boolean).join(" · ");
+  }
+
+  function rowHtml(song){
+    const playing = song.id === currentSongId;
+    return `<div class="row${playing?" playing":""}${selected.has(song.id)?" sel":""}" data-id="${song.id}">
+        <div class="chk"></div>
+        ${artHtml(song)}
+        <div class="meta"><div class="title">${escapeHtml(dispName(song))}</div><div class="sub">${escapeHtml(songInfo(song))}</div></div>
         <button class="more" data-more="${song.id}">⋯</button>
       </div>`;
   }
 
-  function attachRowHandlers(container, ctxIds, label){
-    container.querySelectorAll(".row").forEach(row => {
-      row.addEventListener("click", (e) => {
-        if (e.target.closest(".more")) return;
-        const id = Number(row.dataset.id);
-        playFromContext(ctxIds, id, label);
-      });
-    });
-    container.querySelectorAll("[data-more]").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        openSongSheet(Number(btn.dataset.more));
-      });
+  // one delegated listener per list instead of one per row
+  function bindList(container, getCtx){
+    container.addEventListener("click", (e) => {
+      const more = e.target.closest("[data-more]");
+      if (more){ e.stopPropagation(); openSongSheet(Number(more.dataset.more)); return; }
+      const row = e.target.closest(".row[data-id]");
+      if (!row) return;
+      const id = Number(row.dataset.id);
+      if (selecting){
+        selected.has(id) ? selected.delete(id) : selected.add(id);
+        row.classList.toggle("sel", selected.has(id));
+        updateSelectBar();
+        return;
+      }
+      const c = getCtx();
+      if (c){ playFromContext(c.ids, id, c.label); openFull(); }
     });
   }
+  let libCtx = { ids: [], label: "Library" };
+  let plCtx = null;
+  bindList(libraryListEl, () => libCtx);
+  bindList(playlistListEl, () => plCtx);
 
-  function escapeHtml(str){
-    return str.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  }
-
-  /* ================= Rendering: Playlists ================= */
-  function renderPlaylists(){
-    if (openPlaylistId !== null){
-      renderPlaylistDetail(openPlaylistId);
+  function renderLibrary(){
+    const list = filteredSongs(songs).sort((a,b)=>a.name.localeCompare(b.name));
+    visibleIds = list.map(s => s.id);
+    libCtx = { ids: visibleIds, label: "Library" };
+    if (list.length === 0){
+      libraryListEl.innerHTML = songs.length === 0
+        ? `<div class="empty"><b>No songs yet</b>Tap below, or drag music files or folders here.<br><button class="pill primary" data-import>+ Add songs</button></div>`
+        : `<div class="empty">No matches for "${escapeHtml(searchTerm)}"</div>`;
       return;
     }
-    plHeaderEl.classList.remove("show");
-    if (playlists.length === 0){
-      playlistListEl.innerHTML = `<div class="empty"><b>No playlists yet</b>Create one to group your songs.</div>
-        <button id="newPlaylistBtn">+ New playlist</button>`;
-    } else {
-      playlistListEl.innerHTML = playlists.map(p => `
-        <div class="row" data-plid="${p.id}">
-          <div class="meta">
-            <div class="plname">${escapeHtml(p.name)}</div>
-          </div>
-          <div class="plcount">${p.songIds.length} song${p.songIds.length===1?"":"s"}</div>
-        </div>`).join("") + `<button id="newPlaylistBtn">+ New playlist</button>`;
-    }
-    playlistListEl.querySelectorAll("[data-plid]").forEach(row => {
-      row.addEventListener("click", () => {
-        openPlaylistId = Number(row.dataset.plid);
-        renderPlaylists();
-      });
-    });
-    document.getElementById("newPlaylistBtn").addEventListener("click", createPlaylist);
+    libraryListEl.innerHTML = list.map((s,i) => rowHtml(s, i+1)).join("");
   }
+
+  function renderPlaylists(){
+    if (openPlaylistId !== null) return renderPlaylistDetail(openPlaylistId);
+    plHeaderEl.classList.remove("show");
+    plCtx = null; visibleIds = [];
+    playlistListEl.innerHTML = (playlists.length === 0
+      ? `<div class="empty"><b>No playlists yet</b>Create one to group your songs.</div>`
+      : playlists.map(p => `
+        <div class="row" data-plid="${p.id}">
+          <div class="meta"><div class="plname">${escapeHtml(p.name)}</div></div>
+          <div class="plcount">${p.songIds.length} song${p.songIds.length===1?"":"s"}</div>
+        </div>`).join("")) + `<button class="wideBtn" data-newpl>+ New playlist</button>`;
+  }
+  playlistListEl.addEventListener("click", (e) => {
+    if (e.target.closest("[data-newpl]")) return createPlaylist();
+    const r = e.target.closest("[data-plid]");
+    if (r){ openPlaylistId = Number(r.dataset.plid); renderPlaylists(); }
+  });
 
   function renderPlaylistDetail(plId){
     const pl = playlistById(plId);
     if (!pl){ openPlaylistId = null; return renderPlaylists(); }
     plHeaderEl.classList.add("show");
-    plTitleEl.textContent = pl.name;
-
-    const list = pl.songIds.map(songById).filter(Boolean);
-    const visible = filteredSongs(list);
-
+    $("plTitle").textContent = pl.name;
+    const visible = filteredSongs(pl.songIds.map(songById).filter(Boolean));
+    visibleIds = visible.map(s => s.id);
+    plCtx = { ids: visibleIds, label: pl.name };
     if (visible.length === 0){
-      playlistListEl.innerHTML = list.length === 0
-        ? `<div class="empty"><b>Playlist is empty</b>Add songs from your library using the ⋯ menu.</div>`
+      playlistListEl.innerHTML = pl.songIds.length === 0
+        ? `<div class="empty"><b>Playlist is empty</b>Tap "+ Songs" above to pick songs, or import new ones while this playlist is open.</div>`
         : `<div class="empty">No matches for "${escapeHtml(searchTerm)}"</div>`;
     } else {
       playlistListEl.innerHTML = visible.map((s,i) => rowHtml(s, i+1)).join("");
-      attachRowHandlers(playlistListEl, visible.map(s=>s.id), pl.name);
     }
   }
 
-  document.getElementById("plBack").addEventListener("click", () => {
-    openPlaylistId = null;
-    renderPlaylists();
-  });
-  document.getElementById("plDeleteBtn").addEventListener("click", async () => {
+  function renderCurrentView(){
+    if (currentTab === "library") renderLibrary(); else renderPlaylists();
+  }
+
+  // cheap update of the "playing" highlight without rebuilding lists
+  function markPlayingRows(){
+    document.querySelectorAll(".row.playing").forEach(r => r.classList.remove("playing"));
+    if (currentSongId == null) return;
+    document.querySelectorAll(`.row[data-id="${currentSongId}"]`).forEach(r => r.classList.add("playing"));
+  }
+
+  /* ================= Playlists ================= */
+  $("plBack").addEventListener("click", () => { openPlaylistId = null; renderPlaylists(); });
+  $("plDeleteBtn").addEventListener("click", async () => {
     const pl = playlistById(openPlaylistId);
-    if (!pl) return;
-    if (!confirm(`Delete playlist "${pl.name}"? Songs stay in your library.`)) return;
+    if (!pl || !confirm(`Delete playlist "${pl.name}"? Songs stay in your library.`)) return;
     await Store.deletePlaylist(pl.id);
     playlists = playlists.filter(p => p.id !== pl.id);
     openPlaylistId = null;
     renderPlaylists();
   });
+  $("plAddBtn").addEventListener("click", () => openPickSongsForPlaylist(openPlaylistId));
 
   async function createPlaylist(){
     const name = prompt("Playlist name");
-    if (!name || !name.trim()) return;
+    if (!name || !name.trim()) return null;
     const pl = { name: name.trim(), songIds: [] };
-    const id = await Store.addPlaylist(pl);
-    pl.id = id;
+    pl.id = await Store.addPlaylist(pl);
     playlists.push(pl);
-    renderPlaylists();
+    renderCurrentView();
+    return pl;
   }
 
-  /* ================= Action sheet (per-song) ================= */
-  const sheetOverlay = document.getElementById("sheetOverlay");
-  const sheetEl = document.getElementById("sheet");
+  /* ================= Sheet ================= */
+  const sheetOverlay = $("sheetOverlay");
+  const sheetEl = $("sheet");
+  let sheetOnClose = null;
 
-  function openSongSheet(songId){
-    sheetContextSongId = songId;
-    const song = songById(songId);
-    if (!song) return;
-
-    let html = `<h3>${escapeHtml(song.name)}</h3>`;
-
-    if (openPlaylistId !== null){
-      html += `<div class="sheetAction" data-action="removeFromPlaylist">Remove from this playlist</div>`;
-    }
-    html += `<div class="sheetAction" data-action="addToPlaylist">Add to playlist…</div>`;
-    html += `<div class="sheetAction danger" data-action="deleteSong">Delete from library</div>`;
-    html += `<button id="sheetClose">Cancel</button>`;
-
-    sheetEl.innerHTML = html;
+  function showSheet(html, onClose){
+    sheetEl.innerHTML = html + `<button id="sheetClose">${onClose ? "Done" : "Cancel"}</button>`;
+    sheetOnClose = onClose || null;
     sheetOverlay.classList.add("show");
-
-    sheetEl.querySelectorAll("[data-action]").forEach(el => {
-      el.addEventListener("click", () => handleSheetAction(el.dataset.action, songId));
-    });
-    document.getElementById("sheetClose").addEventListener("click", closeSheet);
+    $("sheetClose").addEventListener("click", closeSheet);
   }
-
   function closeSheet(){
     sheetOverlay.classList.remove("show");
     sheetEl.innerHTML = "";
+    const cb = sheetOnClose; sheetOnClose = null;
+    if (cb) cb();
   }
   sheetOverlay.addEventListener("click", (e) => { if (e.target === sheetOverlay) closeSheet(); });
 
+  function openSongSheet(songId){
+    const song = songById(songId);
+    if (!song) return;
+    let html = `<h3>${escapeHtml(dispName(song))}</h3>
+      <div class="sheetAction" data-action="playNext">Play next</div>
+      <div class="sheetAction" data-action="addQueue">Add to queue</div>`;
+    if (openPlaylistId !== null && currentTab === "playlists")
+      html += `<div class="sheetAction" data-action="removeFromPlaylist">Remove from this playlist</div>`;
+    html += `<div class="sheetAction" data-action="addToPlaylist">Add to playlist…</div>
+      <div class="sheetAction" data-action="rename">Rename</div>
+      <div class="sheetAction danger" data-action="deleteSong">Delete from library</div>`;
+    showSheet(html);
+    sheetEl.querySelectorAll("[data-action]").forEach(el =>
+      el.addEventListener("click", () => handleSheetAction(el.dataset.action, songId)));
+  }
+
   async function handleSheetAction(action, songId){
-    if (action === "deleteSong"){
-      if (!confirm("Delete this song from your library? This can't be undone.")) return;
-      await Store.deleteSong(songId);
-      songs = songs.filter(s => s.id !== songId);
-      playlists.forEach(p => { p.songIds = p.songIds.filter(id => id !== songId); });
-      for (const p of playlists) await Store.putPlaylist(p);
-      if (currentSongId === songId) stopPlayback();
+    if (action === "playNext"){ enqueue([songId], true); closeSheet(); }
+    else if (action === "addQueue"){ enqueue([songId], false); closeSheet(); }
+    else if (action === "deleteSong"){
+      if (!confirm("Delete this song from your library?")) return;
       closeSheet();
-      renderCurrentView();
+      await deleteSongs([songId]);
     } else if (action === "removeFromPlaylist"){
       const pl = playlistById(openPlaylistId);
-      pl.songIds = pl.songIds.filter(id => id !== songId);
-      await Store.putPlaylist(pl);
+      if (pl){ pl.songIds = pl.songIds.filter(id => id !== songId); await Store.putPlaylist(pl); }
+      closeSheet(); renderPlaylists();
+    } else if (action === "rename"){
+      const s = songById(songId);
+      const n = prompt("Song name", privacy.max ? "" : s.name);
       closeSheet();
-      renderPlaylists();
+      if (n && n.trim()){
+        s.name = n.trim();
+        await reqToPromise(tx("songs","readwrite").put(s));
+        renderCurrentView(); updateNowPlayingUI();
+      }
     } else if (action === "addToPlaylist"){
-      openAddToPlaylistPicker(songId);
+      openAddToPlaylistPicker([songId]);
     }
   }
 
-  function openAddToPlaylistPicker(songId){
-    if (playlists.length === 0){
-      closeSheet();
-      alert("No playlists yet. Create one from the Playlists tab first.");
-      return;
-    }
-    let html = `<h3>Add to playlist</h3>`;
+  function openAddToPlaylistPicker(songIds){
+    const many = songIds.length > 1;
+    let html = `<h3>Add ${many ? songIds.length + " songs" : "to playlist"}</h3>`;
     html += playlists.map(p => `
       <div class="sheetItem" data-plid="${p.id}">
         <span>${escapeHtml(p.name)}</span>
-        <input type="checkbox" ${p.songIds.includes(songId) ? "checked":""} />
+        <input type="checkbox" ${!many && p.songIds.includes(songIds[0]) ? "checked":""} />
       </div>`).join("");
-    html += `<button id="sheetClose">Done</button>`;
-    sheetEl.innerHTML = html;
-
+    html += `<div class="sheetAction" data-newpl style="color:var(--accent)">+ New playlist</div>`;
+    showSheet(html, renderCurrentView);
     sheetEl.querySelectorAll(".sheetItem").forEach(item => {
       item.addEventListener("click", async (e) => {
         const cb = item.querySelector("input");
         if (e.target !== cb) cb.checked = !cb.checked;
         const pl = playlistById(Number(item.dataset.plid));
-        if (cb.checked){
-          if (!pl.songIds.includes(songId)) pl.songIds.push(songId);
-        } else {
-          pl.songIds = pl.songIds.filter(id => id !== songId);
-        }
+        if (cb.checked) songIds.forEach(id => { if (!pl.songIds.includes(id)) pl.songIds.push(id); });
+        else pl.songIds = pl.songIds.filter(id => !songIds.includes(id));
         await Store.putPlaylist(pl);
       });
     });
-    document.getElementById("sheetClose").addEventListener("click", () => {
-      closeSheet();
-      renderCurrentView();
+    sheetEl.querySelector("[data-newpl]").addEventListener("click", async () => {
+      const pl = await createPlaylist();
+      if (!pl) return;
+      pl.songIds.push(...songIds);
+      await Store.putPlaylist(pl);
+      toast(`Added to ${pl.name}`);
+      openAddToPlaylistPicker(songIds);
     });
   }
 
-  /* ================= Import ================= */
-  const AUDIO_EXTENSIONS = ["mp3","m4a","m4b","aac","wav","wave","aiff","aif",
-    "flac","ogg","oga","opus","wma","alac","mid","midi","amr","3gp","caf"];
-
-  function isLikelyAudio(file){
-    if (file.type && file.type.startsWith("audio")) return true;
-    const ext = file.name.split(".").pop().toLowerCase();
-    return AUDIO_EXTENSIONS.includes(ext);
+  function openPickSongsForPlaylist(plId){
+    const pl = playlistById(plId);
+    if (!pl) return;
+    if (!songs.length){ toast("Import some songs first"); return; }
+    const sorted = songs.slice().sort((a,b)=>a.name.localeCompare(b.name));
+    const html = `<h3>Add songs to ${escapeHtml(pl.name)}</h3>` + sorted.map(s => `
+      <div class="sheetItem" data-sid="${s.id}">
+        <span>${escapeHtml(dispName(s))}</span>
+        <input type="checkbox" ${pl.songIds.includes(s.id) ? "checked":""} />
+      </div>`).join("");
+    showSheet(html, async () => { await Store.putPlaylist(pl); renderPlaylists(); });
+    sheetEl.querySelectorAll(".sheetItem").forEach(item => {
+      item.addEventListener("click", (e) => {
+        const cb = item.querySelector("input");
+        if (e.target !== cb) cb.checked = !cb.checked;
+        const id = Number(item.dataset.sid);
+        if (cb.checked){ if (!pl.songIds.includes(id)) pl.songIds.push(id); }
+        else pl.songIds = pl.songIds.filter(x => x !== id);
+      });
+    });
   }
 
-  document.getElementById("importBtn").addEventListener("click", () => {
-    document.getElementById("fileInput").click();
-  });
-  document.getElementById("importFolderBtn").addEventListener("click", () => {
-    document.getElementById("folderInput").click();
-  });
-
-  async function handleImportedFiles(fileList, asPlaylist){
-    const files = Array.from(fileList || []);
-    let added = 0, skipped = 0;
-    const newSongIds = [];
-    let suggestedName = "";
-
-    for (const file of files){
-      if (!isLikelyAudio(file)){ skipped++; continue; }
-      // webkitdirectory gives paths like "AlbumName/Track.mp3" — keep just the filename,
-      // but remember the top folder name so we can suggest it as a playlist name.
-      const relPath = file.webkitRelativePath || "";
-      if (relPath && !suggestedName) suggestedName = relPath.split("/")[0];
-      const cleanName = baseName(file.name.split("/").pop());
-      const song = { name: cleanName, blob: file, addedAt: Date.now() };
-      const id = await Store.addSong(song);
-      song.id = id;
-      songs.push(song);
-      newSongIds.push(id);
-      added++;
+  /* ================= Queue ================= */
+  function enqueue(ids, next){
+    ids = ids.filter(songById);
+    if (!ids.length) return;
+    if (next) upNext.unshift(...ids); else upNext.push(...ids);
+    if (currentSongId == null){
+      // nothing loaded yet: start playing straight from the queue
+      ctx = []; playOrder = []; orderPos = -1; ctxLabel = "Queue";
+      loadAndPlay(upNext.shift());
     }
+    toast(ids.length > 1 ? `${ids.length} songs queued` : next ? "Playing next" : "Added to queue");
+    updateNowPlayingUI();
+  }
 
+  function openQueueSheet(){
+    let html = `<h3>Queue</h3>`;
+    const cur = songById(currentSongId);
+    const qc = (id) => { const s = songById(id); return s ? `style="--qc:hsl(${songHue(s)} 65% 55%)"` : ""; };
+    if (cur) html += `<div class="qSec now"><h4>Now playing</h4><div class="sheetItem" ${qc(cur.id)}><span style="color:var(--accent)">${escapeHtml(dispName(cur))}</span></div></div>`;
+    html += `<div class="qSec next"><h4>Up next</h4>`;
+    html += upNext.length
+      ? upNext.map((id,i) => `<div class="sheetItem" data-q="${i}" ${qc(id)}>
+          <span class="qNum">${i + 1}</span>
+          <span>${escapeHtml(dispName(songById(id)))}</span>
+          <button data-up="${i}" title="Move up">↑</button>
+          <button data-rm="${i}" title="Remove">✕</button></div>`).join("")
+        + `<div class="sheetAction danger" data-clear>Clear queue</div>`
+      : `<div class="sheetNote">Empty. Use "Play next" or "Add to queue" from a song's ⋯ menu.</div>`;
+    html += `</div>`;
+    const rest = [];
+    for (let p = orderPos + 1; p < playOrder.length && rest.length < 15; p++) rest.push(ctx[playOrder[p]]);
+    if (rest.length){
+      html += `<div class="qSec later"><h4>Then from ${escapeHtml(ctxLabel)}${shuffleOn ? " (shuffled)" : ""}</h4>`;
+      html += rest.map((id,i) => `<div class="sheetItem" ${qc(id)}><span class="qNum">${i + 1}</span><span style="color:var(--ink-dim)">${escapeHtml(dispName(songById(id)))}</span></div>`).join("");
+      html += `</div>`;
+    }
+    showSheet(html);
+    sheetEl.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => { upNext.splice(Number(b.dataset.rm),1); openQueueSheet(); }));
+    sheetEl.querySelectorAll("[data-up]").forEach(b => b.addEventListener("click", () => {
+      const i = Number(b.dataset.up); if (i > 0){ [upNext[i-1],upNext[i]] = [upNext[i],upNext[i-1]]; } openQueueSheet();
+    }));
+    sheetEl.querySelectorAll("[data-q] span:not(.qNum)").forEach(s => s.addEventListener("click", () => {
+      const i = Number(s.parentNode.dataset.q);
+      const [id] = upNext.splice(i,1); closeSheet(); loadAndPlay(id);
+    }));
+    const clr = sheetEl.querySelector("[data-clear]");
+    if (clr) clr.addEventListener("click", () => { upNext = []; openQueueSheet(); });
+  }
+
+  /* ================= Delete ================= */
+  async function deleteSongs(ids){
+    const idSet = new Set(ids);
+    const changed = playlists.filter(p => p.songIds.some(id => idSet.has(id)));
+    changed.forEach(p => { p.songIds = p.songIds.filter(id => !idSet.has(id)); });
+    await Store.deleteSongs(ids, changed);
+    songs = songs.filter(s => !idSet.has(s.id));
+    ids.forEach(dropArtUrl);
+    upNext = upNext.filter(id => !idSet.has(id));
+
+    // rebuild play context without the deleted songs, keeping position
+    if (ctx.length){
+      const allOrderIds = playOrder.map(i => ctx[i]);
+      // how many surviving songs come before-or-at the current position
+      const survivedUpTo = allOrderIds.slice(0, orderPos + 1).filter(id => !idSet.has(id)).length;
+      const orderIds = allOrderIds.filter(id => !idSet.has(id));
+      ctx = ctx.filter(id => !idSet.has(id));
+      playOrder = orderIds.map(id => ctx.indexOf(id));
+      orderPos = survivedUpTo - 1;
+    }
+    const wasPlaying = idSet.has(currentSongId);
+    if (wasPlaying){
+      if (upNext.length || orderPos < playOrder.length - 1 || (orderPos === -1 && playOrder.length)) nextTrack(false);
+      else stopPlayback();
+    }
+    ids.forEach(id => selected.delete(id));
     renderCurrentView();
+    updateSelectBar();
+    toast(ids.length > 1 ? `Deleted ${ids.length} songs` : "Deleted");
+  }
 
-    if (added === 0 && skipped === 0) return;
-    if (added === 0){
-      showToast("No audio files found.");
+  /* ================= Select mode ================= */
+  function setSelecting(on){
+    selecting = on;
+    selected.clear();
+    $("view").classList.toggle("selecting", on);
+    $("selectBar").classList.toggle("show", on);
+    $("selectBtn").textContent = on ? "Done" : "Select";
+    document.querySelectorAll(".row.sel").forEach(r => r.classList.remove("sel"));
+    updateSelectBar();
+  }
+  function updateSelectBar(){ $("selectCount").textContent = `${selected.size} selected`; }
+  $("selectBtn").addEventListener("click", () => setSelecting(!selecting));
+  $("selAllBtn").addEventListener("click", () => {
+    const all = visibleIds.length && visibleIds.every(id => selected.has(id));
+    visibleIds.forEach(id => all ? selected.delete(id) : selected.add(id));
+    document.querySelectorAll(".row[data-id]").forEach(r => r.classList.toggle("sel", selected.has(Number(r.dataset.id))));
+    updateSelectBar();
+  });
+  $("selDeleteBtn").addEventListener("click", async () => {
+    if (!selected.size) return;
+    if (!confirm(`Delete ${selected.size} song${selected.size===1?"":"s"} from your library?`)) return;
+    await deleteSongs([...selected]);
+    setSelecting(false);
+  });
+  $("selQueueBtn").addEventListener("click", () => {
+    if (!selected.size) return;
+    // keep the on-screen order
+    enqueue(visibleIds.filter(id => selected.has(id)), false);
+    setSelecting(false);
+  });
+
+  /* ================= Import ================= */
+  // No "accept" filter on the pickers: iPhone greys out formats it doesn't label as audio (FLAC, Opus, WebM…).
+  // Every picked file is checked here instead, and only ones this device can actually play are added.
+  const fileInput = $("fileInput"), folderInput = $("folderInput");
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const canPickFolder = !isIOS && "webkitdirectory" in document.createElement("input");
+
+  function openImportSheet(){
+    showSheet(`<h3>Add music</h3>
+      <div class="sheetAction" id="impFiles">Choose files<small style="display:block;color:var(--ink-dim);font-size:12px;margin-top:2px">Any audio format, or a .zip of a folder</small></div>
+      ${canPickFolder ? `<div class="sheetAction" id="impFolder">Choose a folder<small style="display:block;color:var(--ink-dim);font-size:12px;margin-top:2px">Adds every song inside, including subfolders</small></div>` : ""}
+      ${isIOS ? `<div class="sheetNote">To add a whole folder on iPhone/iPad: in the Files app, long-press the folder → <b>Compress</b>, then choose the .zip here.</div>` : ""}`);
+    $("impFiles").addEventListener("click", () => { closeSheet(); fileInput.click(); });
+    if (canPickFolder) $("impFolder").addEventListener("click", () => { closeSheet(); folderInput.click(); });
+  }
+  $("importBtn").addEventListener("click", openImportSheet);
+  libraryListEl.addEventListener("click", (e) => { if (e.target.closest("[data-import]")) openImportSheet(); });
+  [fileInput, folderInput].forEach(inp => inp.addEventListener("change", async (e) => {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = "";
+    await importAny(picked);
+  }));
+
+  const AUDIO_EXT = /\.(mp3|mpga|mp2|m4a|m4b|m4p|mp4|aac|adts|wav|wave|flac|ogg|oga|opus|webm|weba|aif|aiff|aifc|caf|alac|amr|awb|3gp|3g2|mka|mkv|mov|wma|ac3|ec3)$/i;
+  const SAFE_EXT = /\.(mp3|m4a|m4b|aac|wav|mp4)$/i;   // play everywhere, no need to test
+  const MIME_BY_EXT = { mp3:"audio/mpeg", mpga:"audio/mpeg", mp2:"audio/mpeg", m4a:"audio/mp4", m4b:"audio/mp4", m4p:"audio/mp4", mp4:"audio/mp4",
+    aac:"audio/aac", adts:"audio/aac", wav:"audio/wav", wave:"audio/wav", flac:"audio/flac", ogg:"audio/ogg", oga:"audio/ogg", opus:"audio/ogg",
+    webm:"audio/webm", weba:"audio/webm", aif:"audio/aiff", aiff:"audio/aiff", aifc:"audio/aiff", caf:"audio/x-caf", amr:"audio/amr",
+    "3gp":"audio/3gpp", "3g2":"audio/3gpp2", mka:"audio/x-matroska", mkv:"video/x-matroska", mov:"video/quicktime", wma:"audio/x-ms-wma",
+    ac3:"audio/ac3", ec3:"audio/eac3", alac:"audio/mp4", awb:"audio/amr-wb" };
+  const extOf = (n) => (n.match(/\.([^./]+)$/) || [, ""])[1].toLowerCase();
+  const isJunk = (n) => { const b = n.split("/").pop(); return !b || b.startsWith("._") || b.startsWith(".") || /^(thumbs\.db|desktop\.ini)$/i.test(b); };
+
+  // can this device decode it? (loads just the header, gives up after 8s)
+  function canPlayFile(file){
+    return new Promise(res => {
+      const a = new Audio(), url = URL.createObjectURL(file);
+      const done = (ok) => { clearTimeout(t); a.onloadedmetadata = a.onerror = null; a.removeAttribute("src"); URL.revokeObjectURL(url); res(ok); };
+      const t = setTimeout(() => done(false), 8000);
+      a.preload = "metadata"; a.muted = true;
+      a.onloadedmetadata = () => done(isFinite(a.duration) ? a.duration : true);
+      a.onerror = () => done(false);
+      a.src = url;
+    });
+  }
+
+  /* ---- .zip support (store + deflate), so iPhone users can add whole folders ---- */
+  async function unzip(file){
+    const out = [];
+    const tailLen = Math.min(file.size, 65557);
+    const tail = new DataView(await file.slice(file.size - tailLen).arrayBuffer());
+    let eocd = -1;
+    for (let i = tail.byteLength - 22; i >= 0; i--) if (tail.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+    if (eocd < 0) throw new Error("Not a valid .zip");
+    const count = tail.getUint16(eocd + 10, true);
+    const cdSize = tail.getUint32(eocd + 12, true), cdOff = tail.getUint32(eocd + 16, true);
+    if (cdOff === 0xFFFFFFFF) throw new Error("Zip is too large (over 4 GB)");
+    const cd = new DataView(await file.slice(cdOff, cdOff + cdSize).arrayBuffer());
+    const dec = new TextDecoder();
+    let p = 0;
+    for (let n = 0; n < count && p + 46 <= cd.byteLength; n++){
+      if (cd.getUint32(p, true) !== 0x02014b50) break;
+      const method = cd.getUint16(p + 10, true);
+      const csize = cd.getUint32(p + 20, true);
+      const nameLen = cd.getUint16(p + 28, true), extraLen = cd.getUint16(p + 30, true), commLen = cd.getUint16(p + 32, true);
+      const localOff = cd.getUint32(p + 42, true);
+      const name = dec.decode(new Uint8Array(cd.buffer, cd.byteOffset + p + 46, nameLen));
+      p += 46 + nameLen + extraLen + commLen;
+      if (name.endsWith("/") || isJunk(name) || name.includes("__MACOSX/") || !AUDIO_EXT.test(name)) continue;
+      const lh = new DataView(await file.slice(localOff, localOff + 30).arrayBuffer());
+      const start = localOff + 30 + lh.getUint16(26, true) + lh.getUint16(28, true);
+      const raw = file.slice(start, start + csize);
+      let data;
+      if (method === 0) data = raw;
+      else if (method === 8 && typeof DecompressionStream !== "undefined")
+        data = await new Response(raw.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob();
+      else continue;
+      const base = name.split("/").pop();
+      out.push(new File([data], base, { type: MIME_BY_EXT[extOf(base)] || "" }));
+    }
+    return out;
+  }
+
+  // Expands zips, drops non-audio, checks playability, then imports.
+  async function importAny(picked){
+    if (!picked.length) return;
+    let list = [], badZip = 0;
+    for (const f of picked){
+      if (isJunk(f.webkitRelativePath || f.name)) continue;
+      if (extOf(f.name) === "zip" || f.type === "application/zip" || f.type === "application/x-zip-compressed"){
+        toast("Unpacking " + f.name + "…");
+        try { list.push(...await unzip(f)); } catch { badZip++; }
+      } else list.push(f);
+    }
+    const ready = [];
+    let unsupported = 0, i = 0;
+    for (const f of list){
+      i++;
+      const ext = extOf(f.name);
+      const looksAudio = f.type.startsWith("audio/") || f.type.startsWith("video/") || AUDIO_EXT.test(f.name) || (!f.type && !ext);
+      if (!looksAudio){ unsupported++; continue; }
+      // give files a proper type so playback works even when the OS didn't label them
+      const file = f.type ? f : new File([f], f.name, { type: MIME_BY_EXT[ext] || "audio/mpeg" });
+      if (!SAFE_EXT.test(f.name)){
+        if (list.length > 3) toast(`Checking ${i}/${list.length}…`);
+        const dur = await canPlayFile(file);
+        if (!dur){ unsupported++; continue; }
+        if (typeof dur === "number") file._duration = dur;
+      }
+      ready.push(file);
+    }
+    if (!ready.length){
+      toast(badZip ? "Couldn't open that .zip" : unsupported ? "This device can't play those files" : "No music found");
       return;
     }
+    await importFiles(ready, null, unsupported);
+  }
 
-    if (asPlaylist){
-      const name = prompt(
-        `Name a playlist for these ${added} song${added===1?"":"s"}\n(leave blank to just add them to your library)`,
-        suggestedName
-      );
-      if (name && name.trim()){
-        await addSongsToPlaylistByName(name.trim(), newSongIds);
-        let msg = `Added ${added} song${added===1?"":"s"} to "${name.trim()}".`;
-        if (skipped > 0) msg += ` Skipped ${skipped} non-audio file${skipped===1?"":"s"}.`;
-        showToast(msg);
-        return;
+  // extra: optional fields stored with the song (YouTube art/duration/id)
+  async function importFiles(files, extra, unsupported = 0){
+    if (!files.length) return;
+    const existing = new Set(songs.map(s => s.name + "|" + (s.blob && s.blob.size)));
+    const targetPl = currentTab === "playlists" ? playlistById(openPlaylistId) : null;
+    let added = 0, skipped = 0;
+    for (const file of files){
+      const name = baseName(file.name);
+      if (existing.has(name + "|" + file.size)){ skipped++; continue; } // skip duplicates
+      const song = { name, blob: file, addedAt: Date.now(), ...(extra || {}) };
+      if (!song.duration && file._duration) song.duration = file._duration;
+      song.id = await Store.addSong(song);
+      songs.push(song);
+      existing.add(name + "|" + file.size);
+      if (targetPl) targetPl.songIds.push(song.id);
+      added++;
+    }
+    if (targetPl && added) await Store.putPlaylist(targetPl);
+    renderCurrentView();
+    fillMissingDurations();
+    toast(`Added ${added} song${added===1?"":"s"}${skipped ? `, ${skipped} duplicate${skipped===1?"":"s"} skipped` : ""}${unsupported ? `, ${unsupported} can't play here` : ""}`);
+  }
+
+  // folders dragged in on a computer/iPad: walk them recursively
+  async function filesFromEntry(entry, out){
+    if (entry.isFile){ out.push(await new Promise((res, rej) => entry.file(res, rej))); return; }
+    if (!entry.isDirectory) return;
+    const reader = entry.createReader();
+    for (;;){
+      const batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+      if (!batch.length) break;
+      for (const e of batch) await filesFromEntry(e, out);
+    }
+  }
+
+  // drag & drop (desktop / iPad)
+  const viewEl = $("view");
+  viewEl.addEventListener("dragover", (e) => { e.preventDefault(); viewEl.classList.add("dragover"); });
+  viewEl.addEventListener("dragleave", () => viewEl.classList.remove("dragover"));
+  viewEl.addEventListener("drop", async (e) => {
+    e.preventDefault(); viewEl.classList.remove("dragover");
+    const entries = Array.from(e.dataTransfer.items || []).map(it => it.webkitGetAsEntry && it.webkitGetAsEntry()).filter(Boolean);
+    if (!entries.length) return importAny(Array.from(e.dataTransfer.files || []));
+    const files = [];
+    for (const en of entries){ try { await filesFromEntry(en, files); } catch {} }
+    importAny(files);
+  });
+
+  /* ================= YouTube (via own yt-dlp server) ================= */
+  // Filled in at deploy time from the YT_SERVER_URL repo variable (see .github/workflows/pages.yml)
+  const YT_SERVER_BUILD = "__YT_SERVER__";
+  const ytServer = () => (YT_SERVER_BUILD.startsWith("__") ? loadPref("ytServer", "") : YT_SERVER_BUILD).replace(/\/+$/, "");
+
+  $("ytBtn").addEventListener("click", () => {
+    if (!ytServer() || !loadPref("ytKey", "")) openYtSettings(); else openYtSearch();
+  });
+
+  function openYtSettings(){
+    const askServer = YT_SERVER_BUILD.startsWith("__"); // only when running without a deployed server URL
+    showSheet(`<h3>YouTube</h3>
+      <div class="sheetNote">Enter the password to use YouTube search.</div>
+      ${askServer ? `<div class="ytRow"><input id="ytServerIn" type="url" placeholder="Server URL" value="${escapeHtml(loadPref("ytServer", ""))}"></div>` : ""}
+      <div class="ytRow"><input id="ytKeyIn" type="password" placeholder="Password" value="${escapeHtml(loadPref("ytKey", ""))}"></div>
+      <div class="sheetAction" id="ytSave" style="color:var(--accent)">Save</div>`);
+    $("ytSave").addEventListener("click", () => {
+      if (askServer) savePref("ytServer", $("ytServerIn").value.trim());
+      savePref("ytKey", $("ytKeyIn").value.trim());
+      openYtSearch();
+    });
+  }
+
+  // timeoutMs: give up instead of spinning forever (search 90s covers the free server waking up)
+  async function ytFetch(path, timeoutMs = 90000){
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    let res;
+    try {
+      res = await fetch(ytServer() + path, { headers: { "X-Api-Key": loadPref("ytKey", "") }, signal: ctl.signal });
+    } catch (err) {
+      if (err && err.name === "AbortError") throw new Error("Server took too long. Try again in a minute.");
+      throw new Error("Can't reach the server (it may be blocking this site's address).");
+    } finally { clearTimeout(timer); }
+    if (res.ok) return res;
+    if (res.status === 401) throw new Error("Wrong password");
+    let detail = "";
+    try { detail = (await res.json()).detail || ""; } catch {}
+    throw new Error(detail || "Server error " + res.status);
+  }
+
+  function fmtDur(sec){
+    if (!sec) return "";
+    sec = Math.round(sec);
+    return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+  }
+
+  function openYtSearch(){
+    // wake the free server up while the user is still typing
+    fetch(ytServer() + "/", { cache: "no-store" }).catch(() => {});
+    showSheet(`<h3>Search YouTube</h3>
+      <form class="ytRow" id="ytForm"><input id="ytQ" type="search" placeholder="Song or artist" enterkeyhint="search"></form>
+      <div id="ytResults"></div>
+      <div class="sheetAction" id="ytSettings" style="color:var(--ink-dim)">Password</div>`);
+    $("ytSettings").addEventListener("click", openYtSettings);
+    $("ytQ").focus();
+    $("ytForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const q = $("ytQ").value.trim();
+      if (!q) return;
+      $("ytQ").blur();
+      const box = $("ytResults");
+      box.innerHTML = `<div class="sheetNote">Searching…</div>`;
+      try {
+        const results = await (await ytFetch("/search?q=" + encodeURIComponent(q))).json();
+        if (!results.length){ box.innerHTML = `<div class="sheetNote">No results</div>`; return; }
+        box.innerHTML = results.map(r => `
+          <div class="ytRes" data-id="${escapeHtml(r.id)}" data-title="${escapeHtml(r.title)}" data-dur="${Number(r.duration) || ""}">
+            <img src="${escapeHtml(r.thumbnail)}" alt="" loading="lazy">
+            <div><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.channel)}${r.duration ? " · " + fmtDur(r.duration) : ""}</small></div>
+            <em>Add</em>
+          </div>`).join("");
+        box.querySelectorAll(".ytRes").forEach(row => row.addEventListener("click", () => ytDownload(row)));
+      } catch (err) {
+        box.innerHTML = `<div class="sheetNote">${escapeHtml(err.message || "Search failed")}</div>`;
       }
-    }
-
-    let msg = `Added ${added} song${added===1?"":"s"}.`;
-    if (skipped > 0) msg += ` Skipped ${skipped} non-audio file${skipped===1?"":"s"} (like cover art).`;
-    showToast(msg);
+    });
   }
 
-  async function addSongsToPlaylistByName(name, songIds){
-    let pl = playlists.find(p => p.name.toLowerCase() === name.toLowerCase());
-    if (!pl){
-      pl = { name, songIds: [] };
-      const id = await Store.addPlaylist(pl);
-      pl.id = id;
-      playlists.push(pl);
+  // save the thumbnail with the song so it shows offline; i.ytimg.com allows cross-origin fetches
+  async function fetchThumb(id){
+    for (const q of ["mqdefault", "hqdefault", "default"]){
+      try {
+        const res = await fetch(`https://i.ytimg.com/vi/${encodeURIComponent(id)}/${q}.jpg`);
+        if (res.ok){ const b = await res.blob(); if (b.size > 1000) return b; }
+      } catch {}
     }
-    for (const id of songIds){
-      if (!pl.songIds.includes(id)) pl.songIds.push(id);
-    }
-    await Store.putPlaylist(pl);
+    return null;
   }
 
-  document.getElementById("fileInput").addEventListener("change", (e) => {
-    handleImportedFiles(e.target.files, false);
-    e.target.value = "";
-  });
-  document.getElementById("folderInput").addEventListener("change", (e) => {
-    handleImportedFiles(e.target.files, true);
-    e.target.value = "";
-  });
-
-  function showToast(msg){
-    let toast = document.getElementById("toast");
-    if (!toast){
-      toast = document.createElement("div");
-      toast.id = "toast";
-      toast.style.cssText = `position:fixed; left:50%; bottom:calc(var(--safe-bottom) + 100px);
-        transform:translateX(-50%); background:var(--bg-raised); border:1px solid var(--line);
-        color:var(--ink); padding:10px 16px; border-radius:10px; font-size:13px; z-index:50;
-        max-width:85vw; text-align:center; opacity:0; transition:opacity .25s;`;
-      document.body.appendChild(toast);
+  async function ytDownload(row){
+    const status = row.querySelector("em");
+    if (row.dataset.busy) return;
+    row.dataset.busy = "1";
+    status.textContent = "Downloading…";
+    try {
+      // up to 5 min per try, and one automatic retry: YouTube is sometimes slow or briefly refuses
+      let blob = null, lastErr = null;
+      for (let attempt = 1; attempt <= 2 && !blob; attempt++){
+        if (attempt > 1){ status.textContent = "Retrying…"; await new Promise(r => setTimeout(r, 3000)); }
+        try {
+          const res = await ytFetch("/download?id=" + encodeURIComponent(row.dataset.id), 300000);
+          const b = await res.blob();
+          if (b.size < 1000) throw new Error("Download was empty");
+          blob = b;
+        } catch (err) {
+          lastErr = err;
+          if (/password/i.test(err.message)) break;   // retrying won't fix a wrong password
+        }
+      }
+      if (!blob) throw lastErr || new Error("Download failed");
+      const type = blob.type || "audio/mp4";
+      const ext = type.includes("webm") ? ".webm" : type.startsWith("video/") ? ".mp4" : type.includes("mpeg") ? ".mp3" : ".m4a";
+      const id = row.dataset.id;
+      const extra = { ytId: id };
+      if (Number(row.dataset.dur)) extra.duration = Number(row.dataset.dur);
+      const art = await fetchThumb(id);
+      if (art) extra.art = art;
+      await importFiles([new File([blob], row.dataset.title + ext, { type })], extra);
+      status.textContent = "Added ✓";
+    } catch (err) {
+      status.textContent = "Failed";
+      toast(err.message || "Download failed");
+      delete row.dataset.busy;
     }
-    toast.textContent = msg;
-    toast.style.opacity = "1";
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => { toast.style.opacity = "0"; }, 3200);
   }
 
   /* ================= Tabs & search ================= */
@@ -847,227 +1235,701 @@
       currentTab = tabBtn.dataset.tab;
       libraryListEl.style.display = currentTab === "library" ? "block" : "none";
       playlistListEl.style.display = currentTab === "playlists" ? "block" : "none";
-      if (currentTab !== "playlists") plHeaderEl.classList.remove("show");
+      if (selecting) setSelecting(false);
       renderCurrentView();
     });
   });
-
-  document.getElementById("searchInput").addEventListener("input", (e) => {
-    searchTerm = e.target.value;
-    renderCurrentView();
+  let searchTimer;
+  $("searchInput").addEventListener("input", (e) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { searchTerm = e.target.value.trim(); renderCurrentView(); }, 120);
   });
 
-  function renderCurrentView(){
-    if (currentTab === "library") renderLibrary();
-    else renderPlaylists();
-  }
-
   /* ================= Playback engine ================= */
-  function playFromContext(ctxIds, songId, label){
-    queue = ctxIds.slice();
-    queueLabel = label;
-    const startIdx = queue.indexOf(songId);
-    playOrder = shuffleOn ? shuffledIndices(queue.length) : queue.map((_,i)=>i);
-    // make sure playback starts on the chosen song regardless of shuffle order
-    orderPos = playOrder.indexOf(startIdx);
-    if (orderPos === -1) orderPos = 0;
-    loadAndPlay(queue[playOrder[orderPos]]);
+  function playFromContext(ids, songId, label){
+    ctx = ids.slice();
+    ctxLabel = label;
+    const startIdx = ctx.indexOf(songId);
+    playOrder = shuffleOn ? shuffledIndices(ctx.length, startIdx) : ctx.map((_,i)=>i);
+    orderPos = Math.max(0, playOrder.indexOf(startIdx));
+    loadAndPlay(songId);
   }
 
-  async function loadAndPlay(songId){
+  function loadAndPlay(songId){
     const song = songById(songId);
     if (!song) return;
     currentSongId = songId;
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = URL.createObjectURL(song.blob);
     audio.src = currentObjectUrl;
-    try { await audio.play(); } catch(err){ /* iOS may require direct gesture; play button will retry */ }
+    audio.loop = repeatMode === "one";
+    applyBoost();
+    safePlay();
     updateNowPlayingUI();
-    renderCurrentView();
+    markPlayingRows();
     updateMediaSession(song);
+    updateTint();
   }
 
   function stopPlayback(){
-    audio.pause();
+    userPause();
     audio.removeAttribute("src");
+    audio.load();
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = null;
     currentSongId = null;
-    queue = [];
-    playOrder = [];
-    orderPos = -1;
+    updateTint();
+    ctx = []; playOrder = []; orderPos = -1; upNext = [];
     updateNowPlayingUI();
+    markPlayingRows();
+    if ("mediaSession" in navigator){
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = "none";
+    }
   }
 
   function playPause(){
-    if (!currentSongId) return;
-    if (audio.paused) audio.play(); else audio.pause();
+    if (currentSongId == null) return;
+    if (audio.paused){ resumeBoost(); safePlay(); } else userPause();
   }
 
-  function nextTrack(auto){
-    if (queue.length === 0) return;
-    if (repeatMode === "one" && auto){
-      audio.currentTime = 0;
-      audio.play();
-      return;
-    }
+  function nextTrack(){
+    if (upNext.length){ loadAndPlay(upNext.shift()); return; }
+    if (!playOrder.length) { userPause(); return; }
     if (orderPos < playOrder.length - 1){
       orderPos++;
-    } else if (repeatMode === "all"){
-      if (shuffleOn) playOrder = shuffledIndices(queue.length);
+    } else if (repeatMode !== "off"){
+      // loop the whole list (also when on "one" and user presses next at the end)
+      if (shuffleOn) playOrder = shuffledIndices(ctx.length, -1);
       orderPos = 0;
     } else {
-      audio.pause();
+      userPause();
       audio.currentTime = 0;
-      updateNowPlayingUI();
-      return; // reached end, stop advancing
+      return;
     }
-    loadAndPlay(queue[playOrder[orderPos]]);
+    loadAndPlay(ctx[playOrder[orderPos]]);
   }
 
   function prevTrack(){
-    if (queue.length === 0) return;
-    // if more than 3s into the song, restart it instead of going back
-    if (audio.currentTime > 3){
-      audio.currentTime = 0;
-      return;
-    }
-    if (orderPos > 0){
-      orderPos--;
-    } else if (repeatMode === "all"){
-      orderPos = playOrder.length - 1;
-    } else {
-      audio.currentTime = 0;
-      return;
-    }
-    loadAndPlay(queue[playOrder[orderPos]]);
+    if (currentSongId == null) return;
+    if (audio.currentTime > 3 || !playOrder.length){ audio.currentTime = 0; return; }
+    if (orderPos > 0) orderPos--;
+    else if (repeatMode !== "off") orderPos = playOrder.length - 1;
+    else { audio.currentTime = 0; return; }
+    loadAndPlay(ctx[playOrder[orderPos]]);
   }
 
   function toggleShuffle(){
     shuffleOn = !shuffleOn;
-    if (queue.length){
-      const currentQueueIdx = queue.indexOf(currentSongId);
-      playOrder = shuffleOn ? shuffledIndices(queue.length) : queue.map((_,i)=>i);
-      orderPos = playOrder.indexOf(currentQueueIdx);
-      if (orderPos === -1) orderPos = 0;
+    savePref("shuffle", shuffleOn ? "1" : "0");
+    if (ctx.length){
+      const curIdx = orderPos >= 0 ? playOrder[orderPos] : -1;
+      playOrder = shuffleOn ? shuffledIndices(ctx.length, curIdx) : ctx.map((_,i)=>i);
+      orderPos = curIdx >= 0 ? playOrder.indexOf(curIdx) : -1;
     }
-    document.getElementById("shuffleBtn").classList.toggle("active", shuffleOn);
+    updateModeUI();
+    toast(shuffleOn ? "Shuffle on" : "Shuffle off");
   }
 
   function cycleRepeat(){
     repeatMode = repeatMode === "off" ? "all" : repeatMode === "all" ? "one" : "off";
-    const btn = document.getElementById("repeatBtn");
-    btn.classList.toggle("active", repeatMode !== "off");
-    btn.textContent = repeatMode === "one" ? "🔂" : "🔁";
+    savePref("repeat", repeatMode);
+    audio.loop = repeatMode === "one";
+    updateModeUI();
+    toast(repeatMode === "off" ? "Loop off" : repeatMode === "all" ? "Loop all songs" : "Loop this song");
   }
 
-  audio.addEventListener("ended", () => nextTrack(true));
-  audio.addEventListener("error", () => {
-    if (!currentSongId) return;
+  function updateModeUI(){
+    const sb = $("shuffleBtn"), rb = $("repeatBtn");
+    sb.classList.toggle("active", shuffleOn);
+    sb.setAttribute("aria-pressed", shuffleOn);
+    rb.classList.toggle("active", repeatMode !== "off");
+    rb.classList.toggle("mode-one", repeatMode === "one");
+    rb.setAttribute("aria-pressed", repeatMode !== "off");
+    rb.title = "Loop: " + (repeatMode === "off" ? "off" : repeatMode === "all" ? "all" : "one song");
+    updateNowPlayingUI();
+  }
+
+  function modesHtml(){
+    let b = "";
+    if (shuffleOn) b += `<span class="badge">SHUFFLE</span>`;
+    if (repeatMode === "all") b += `<span class="badge">LOOP</span>`;
+    if (repeatMode === "one") b += `<span class="badge">LOOP 1</span>`;
+    return b ? ` <span class="modes">${b}</span>` : "";
+  }
+
+  audio.addEventListener("ended", () => nextTrack());
+  audio.addEventListener("play", () => { userPaused = false; resumeBoost(); updatePlayButtons(); updatePositionState(); });
+  audio.addEventListener("pause", () => { updatePlayButtons(); updatePositionState(); onSystemPause(); });
+
+  /* ---- Notifications: let them dip the music, or keep it at full volume ---- */
+  // A pause we didn't ask for = the phone interrupted us (notification, alert, Siri...).
+  //  on : music steps aside for the alert, then comes back by itself.
+  //  off: music is pushed straight back to full volume.
+  const notif = { duck: loadPref("duckOn", "1") === "1" };
+  let userPaused = false, outputChangedAt = 0;
+  function userPause(){ userPaused = true; audio.pause(); }
+  // unplugging headphones also pauses: never blast that out of the speaker
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener)
+    navigator.mediaDevices.addEventListener("devicechange", () => { outputChangedAt = Date.now(); });
+  function onSystemPause(){
+    if (userPaused || audio.ended || currentSongId == null) return;
+    setTimeout(() => {
+      if (userPaused || !audio.paused || currentSongId == null || Date.now() - outputChangedAt < 2000) return;
+      resumeBoost(); safePlay();
+    }, notif.duck ? 2500 : 0);
+  }
+  function applyAudioSession(){
+    // Safari 16.4+: "playback" keeps music going with the ringer switch off and over other sounds
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
+    if (actx && !audio.paused) resumeBoost();
+  }
+  audio.addEventListener("seeked", updatePositionState);
+  audio.addEventListener("ratechange", updatePositionState);
+  audio.addEventListener("loadedmetadata", () => {
+    lastSec = -1; updateProgress(); updatePositionState();
+    // remember the real length so the library can show it
     const song = songById(currentSongId);
-    showToast(`Can't play "${song ? song.name : "this track"}" — unsupported format on this device.`);
+    if (song && isFinite(audio.duration) && Math.round(song.duration || 0) !== Math.round(audio.duration)){
+      song.duration = audio.duration;
+      reqToPromise(tx("songs","readwrite").put(song)).catch(() => {});
+      $("fpInfo").textContent = songInfo(song);
+    }
   });
-  audio.addEventListener("play", updatePlayButtons);
-  audio.addEventListener("pause", updatePlayButtons);
-  audio.addEventListener("timeupdate", updateProgress);
-  audio.addEventListener("loadedmetadata", updateProgress);
+  audio.addEventListener("timeupdate", () => { if (fullOpen && !document.hidden) updateProgress(); });
 
   function updatePlayButtons(){
-    const playing = !audio.paused && currentSongId;
-    document.getElementById("miniPlayPause").textContent = playing ? "⏸" : "▶︎";
-    document.getElementById("playBtn").textContent = playing ? "⏸" : "▶︎";
+    const playing = !audio.paused && currentSongId != null;
+    $("miniPlayPause").textContent = playing ? "⏸" : "▶︎";
+    $("playBtn").textContent = playing ? "⏸" : "▶︎";
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = playing ? "playing" : "paused";
   }
 
-  let isSeeking = false;
-
+  /* ---- progress: only redrawn while full player is visible, once per second ---- */
+  let isSeeking = false, lastSec = -1, fullOpen = false;
+  const seekBarEl = $("seekBar");
   function updateProgress(){
-    const dur = audio.duration || 0;
-    const cur = audio.currentTime || 0;
-    const seekBar = document.getElementById("seekBar");
-    if (!isSeeking) seekBar.value = dur ? (cur/dur)*100 : 0;
-    document.getElementById("curTime").textContent = fmtTime(cur);
-    document.getElementById("durTime").textContent = fmtTime(dur);
+    const cur = audio.currentTime || 0, dur = audio.duration || 0;
+    const sec = Math.floor(cur);
+    if (sec === lastSec) return;
+    lastSec = sec;
+    if (!isSeeking) seekBarEl.value = dur ? (cur/dur)*1000 : 0;
+    $("curTime").textContent = fmtTime(cur);
+    $("durTime").textContent = fmtTime(dur);
   }
-
-  const seekBarEl = document.getElementById("seekBar");
-  seekBarEl.addEventListener("pointerdown", () => { isSeeking = true; });
   seekBarEl.addEventListener("input", (e) => {
-    const dur = audio.duration || 0;
-    document.getElementById("curTime").textContent = fmtTime((e.target.value/100) * dur);
+    isSeeking = true;
+    $("curTime").textContent = fmtTime((e.target.value/1000) * (audio.duration || 0));
   });
   seekBarEl.addEventListener("change", (e) => {
     const dur = audio.duration || 0;
-    audio.currentTime = (e.target.value/100) * dur;
-    isSeeking = false;
+    if (dur) audio.currentTime = (e.target.value/1000) * dur;
+    isSeeking = false; lastSec = -1;
   });
 
+  function seekBy(d){
+    if (currentSongId == null) return;
+    const dur = audio.duration || 0;
+    audio.currentTime = Math.max(0, Math.min(dur ? dur - 0.25 : 0, audio.currentTime + d));
+    lastSec = -1; updateProgress(); updatePositionState();
+  }
+
   function updateNowPlayingUI(){
-    const song = currentSongId ? songById(currentSongId) : null;
-    const mini = document.getElementById("miniPlayer");
+    const song = currentSongId != null ? songById(currentSongId) : null;
+    const mini = $("miniPlayer");
+    const bigArt = $("bigArt"), miniArt = $("miniArt");
     if (!song){
       mini.classList.remove("show");
-      document.getElementById("fpTitle").textContent = "—";
-      document.getElementById("fpSub").textContent = "Nothing playing";
+      $("fpTitle").textContent = "—";
+      $("fpSub").innerHTML = "Nothing playing" + modesHtml();
+      $("fpInfo").textContent = "";
+      bigArt.className = ""; bigArt.style.cssText = ""; bigArt.textContent = "";
       return;
     }
     mini.classList.add("show");
-    document.getElementById("miniTitle").textContent = song.name;
-    document.getElementById("miniSub").textContent = queueLabel || "Playing";
-    document.getElementById("fpTitle").textContent = song.name;
-    document.getElementById("fpSub").textContent = queueLabel || "";
+    const u = artUrl(song);
+    if (u){
+      bigArt.className = "hasArt"; bigArt.textContent = "";
+      bigArt.style.cssText = `background-image:url("${u}")`;
+      miniArt.style.background = "";
+      miniArt.innerHTML = `<img src="${u}" alt="">`;
+    } else {
+      bigArt.className = "letter"; bigArt.textContent = songLetter(song);
+      bigArt.style.cssText = `background:${letterBg(song)}`;
+      miniArt.style.background = letterBg(song);
+      miniArt.textContent = songLetter(song);
+    }
+    $("fpInfo").textContent = songInfo(song);
+    const q = upNext.length ? ` · ${upNext.length} queued` : "";
+    $("miniTitle").textContent = dispName(song);
+    $("miniSub").innerHTML = escapeHtml(ctxLabel || "Playing") + q + modesHtml();
+    $("fpTitle").textContent = dispName(song);
+    $("fpSub").innerHTML = escapeHtml(ctxLabel || "") + q + modesHtml();
     updatePlayButtons();
   }
 
   function updateMediaSession(song){
     if (!("mediaSession" in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: song.name,
-      artist: "Crate Player",
-      album: queueLabel || "",
+    const hidden = privacy.hide || privacy.max;
+    const u = hidden ? null : artUrl(song);
+    const artwork = u
+      ? [{ src: u, sizes: "320x180", type: song.art.type || "image/jpeg" }]
+      : [{ src: "icons/icon-512.png", sizes: "512x512", type: "image/png" }];
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: hidden ? (privacy.max ? songLetter(song) : "Hidden song") : song.name, artist: "Seal Music Player", album: hidden ? "" : ctxLabel || "", artwork });
+    } catch {}
+  }
+  // lets the lock screen / notification show and drag the progress bar
+  function updatePositionState(){
+    if (!("mediaSession" in navigator) || !navigator.mediaSession.setPositionState) return;
+    const dur = audio.duration;
+    if (currentSongId == null || !isFinite(dur) || dur <= 0) return;
+    try {
+      navigator.mediaSession.setPositionState({ duration: dur, playbackRate: audio.playbackRate || 1, position: Math.min(audio.currentTime || 0, dur) });
+    } catch {}
+  }
+  // controls on the lock screen, Control Center, notification shade, headphones, car, smartwatch
+  if ("mediaSession" in navigator){
+    const ms = navigator.mediaSession, set = (a, f) => { try { ms.setActionHandler(a, f); } catch {} };
+    set("play", () => { if (currentSongId != null){ resumeBoost(); safePlay(); } });
+    set("pause", userPause);
+    set("stop", stopPlayback);
+    set("previoustrack", prevTrack);
+    set("nexttrack", nextTrack);
+    set("seekbackward", (d) => seekBy(-((d && d.seekOffset) || 15)));
+    set("seekforward", (d) => seekBy((d && d.seekOffset) || 15));
+    set("seekto", (d) => {
+      if (currentSongId == null || !d || !isFinite(d.seekTime)) return;
+      if (d.fastSeek && "fastSeek" in audio) audio.fastSeek(d.seekTime); else audio.currentTime = d.seekTime;
+      lastSec = -1; updateProgress(); updatePositionState();
     });
-    navigator.mediaSession.setActionHandler("play", () => audio.play());
-    navigator.mediaSession.setActionHandler("pause", () => audio.pause());
-    navigator.mediaSession.setActionHandler("previoustrack", prevTrack);
-    navigator.mediaSession.setActionHandler("nexttrack", () => nextTrack(false));
-    navigator.mediaSession.setActionHandler("seekbackward", () => { audio.currentTime = Math.max(0, audio.currentTime - 15); });
-    navigator.mediaSession.setActionHandler("seekforward", () => { audio.currentTime = Math.min(audio.duration||0, audio.currentTime + 15); });
+  }
+  // keyboard / hardware media keys on computers
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("input, textarea")) return;
+    if (e.code === "Space"){ e.preventDefault(); playPause(); }
+    else if (e.code === "ArrowRight") seekBy(15);
+    else if (e.code === "ArrowLeft") seekBy(-15);
+  });
+
+  /* ================= Boosts (Web Audio) ================= */
+  // Bass boost (level 1-10) can be combined with ultra (1.5x) or max (3x); ultra and max exclusive.
+  const boost = {
+    bass: loadPref("bassOn", "0") === "1",
+    bassLevel: Math.min(10, Math.max(1, Number(loadPref("bassLevel", "5")) || 5)),
+    ultra: loadPref("ultraOn", "0") === "1",
+    max: loadPref("maxOn", "0") === "1",
+  };
+  if (boost.ultra && boost.max) boost.ultra = false;
+  const BOOST_COLORS = { bass: "#ff2d4a", ultra: "#ffcc00", max: "#19d3c5" };
+  const fx = {
+    on: loadPref("fxOn", "1") === "1",
+    pulse: loadPref("fxPulse", "1") === "1",
+    colors: {
+      bass: loadPref("colBass", BOOST_COLORS.bass),
+      ultra: loadPref("colUltra", BOOST_COLORS.ultra),
+      max: loadPref("colMax", BOOST_COLORS.max),
+    },
+  };
+  const anyBoost = () => boost.bass || boost.ultra || boost.max;
+
+  // The audio graph is only built the first time a boost is used: once the <audio> element is routed
+  // through Web Audio it stays that way until the app is reopened.
+  // Chain: low shelf (wide bass, reaches up into the kick/body) -> peak (deep punch) -> drive
+  //        -> compressor (lifts the average so beats hit harder) -> make-up gain -> soft clipper (hard ceiling, no harsh digital clipping)
+  let actx = null, shelfNode = null, punchNode = null, driveNode = null, comp = null, makeupNode = null, clipNode = null;
+  const clipCurves = {};
+  function clipCurve(k){
+    if (clipCurves[k]) return clipCurves[k];
+    const n = 4096, c = new Float32Array(n), d = Math.tanh(k);
+    for (let i = 0; i < n; i++){ const x = i * 2 / (n - 1) - 1; c[i] = Math.tanh(k * x) / d; }
+    return (clipCurves[k] = c);
+  }
+  function ensureGraph(){
+    if (actx) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    try {
+      actx = new AC();
+      const src = actx.createMediaElementSource(audio);
+      shelfNode = actx.createBiquadFilter();
+      shelfNode.type = "lowshelf"; shelfNode.frequency.value = 220;
+      punchNode = actx.createBiquadFilter();
+      punchNode.type = "peaking"; punchNode.frequency.value = 75; punchNode.Q.value = 0.8;
+      driveNode = actx.createGain();
+      comp = actx.createDynamicsCompressor();
+      makeupNode = actx.createGain();
+      clipNode = actx.createWaveShaper();
+      clipNode.oversample = "4x";
+      src.connect(shelfNode); shelfNode.connect(punchNode); punchNode.connect(driveNode);
+      driveNode.connect(comp); comp.connect(makeupNode); makeupNode.connect(clipNode); clipNode.connect(actx.destination);
+      actx.addEventListener("statechange", () => {
+        // iOS "interrupts" the context on calls/notifications/lock; pick back up if music is meant to be playing
+        if (actx.state !== "running" && !audio.paused && !userPaused)
+          setTimeout(() => { if (!audio.paused) actx.resume().catch(() => {}); }, notif.duck ? 2500 : 0);
+      });
+      return true;
+    } catch { actx = null; return false; }
+  }
+  function resumeBoost(){ if (actx && actx.state !== "running") actx.resume().catch(() => {}); }
+
+  function applyBoost(){
+    if (!actx && !anyBoost()) return;   // nothing on: leave plain playback untouched
+    if (!ensureGraph()) return;
+    const t = actx.currentTime, L = boost.bass ? boost.bassLevel : 0;
+    const dB = (v) => Math.pow(10, v / 20);
+    // level 10 = +20 dB wide shelf with +14 dB punch on top: as much bass as the speaker can take
+    shelfNode.gain.setTargetAtTime(L ? 2 + L * 1.8 : 0, t, 0.05);
+    punchNode.gain.setTargetAtTime(L ? L * 1.4 : 0, t, 0.05);
+    driveNode.gain.setTargetAtTime(boost.max ? 4 : boost.ultra ? 2 : 1, t, 0.05);
+    // compressor: [threshold dB, ratio, attack s]; a slower attack on bass lets each kick punch through
+    const [T, R, att] = boost.max ? [-42, 20, 0.002] : boost.ultra ? [-26, 8, 0.004] : L ? [-18 - L * 1.5, 4, 0.015] : [0, 1, 0.003];
+    comp.threshold.value = T; comp.ratio.value = R; comp.attack.value = att;
+    comp.knee.value = boost.max ? 3 : 8; comp.release.value = boost.max ? 0.09 : 0.18;
+    // make-up gain brings compressed audio back up to full scale, so boosted songs are louder, never quieter;
+    // max pushes extra into the clipper for the loudest result possible
+    const makeup = R > 1 ? -T * (1 - 1 / R) + (boost.max ? 8 : boost.ultra ? 3 : 1) : 0;
+    makeupNode.gain.setTargetAtTime(dB(makeup), t, 0.05);
+    clipNode.curve = boost.max ? clipCurve(3) : boost.ultra ? clipCurve(2) : L ? clipCurve(1.4) : null;
+    resumeBoost();
+  }
+
+  function applyTheme(){
+    const kind = boost.max ? "max" : boost.ultra ? "ultra" : boost.bass ? "bass" : null;
+    const body = document.body;
+    body.classList.toggle("fx", !!(kind && fx.on));
+    body.classList.toggle("pulse", !!(kind && fx.on && fx.pulse));
+    if (kind) body.style.setProperty("--boost", fx.colors[kind]);
+    else body.style.removeProperty("--boost");
+    const tinting = privacy.tint && currentTint && currentSongId != null;
+    body.classList.toggle("tint", !!tinting);
+    if (tinting) body.style.setProperty("--tint", currentTint);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = kind && fx.on ? fx.colors[kind] : tinting ? mixDark(currentTint, 0.2) : "#0c0f10";
+    $("boostBtn").classList.toggle("on", !!kind);
+  }
+
+  /* ---- song colour: average colour of the artwork (or the letter tile's hue) ---- */
+  let currentTint = null;
+  const tintCache = new Map();
+  function mixDark(rgb, f){
+    const m = rgb.match(/\d+/g); if (!m) return "#0c0f10";
+    const base = [12, 15, 16];
+    return "#" + m.slice(0,3).map((v,i) => Math.round(v * f + base[i] * (1 - f)).toString(16).padStart(2,"0")).join("");
+  }
+  async function songTint(song){
+    if (tintCache.has(song.id)) return tintCache.get(song.id);
+    let col = null;
+    if (song.art && window.createImageBitmap){
+      try {
+        const bmp = await createImageBitmap(song.art);
+        const c = document.createElement("canvas"); c.width = c.height = 24;
+        const g = c.getContext("2d"); g.drawImage(bmp, 0, 0, 24, 24);
+        const d = g.getImageData(0, 0, 24, 24).data;
+        // weight vivid pixels more, so the tint follows the cover's main colour instead of going grey
+        let r = 0, gg = 0, b = 0, w = 0;
+        for (let i = 0; i < d.length; i += 4){
+          const mx = Math.max(d[i], d[i+1], d[i+2]), mn = Math.min(d[i], d[i+1], d[i+2]);
+          const wt = 1 + (mx - mn) / 16;
+          r += d[i] * wt; gg += d[i+1] * wt; b += d[i+2] * wt; w += wt;
+        }
+        col = `rgb(${Math.round(r/w)},${Math.round(gg/w)},${Math.round(b/w)})`;
+      } catch {}
+    }
+    if (!col){
+      // no cover: use the letter tile's colour (hsl(h 60% 45%) as rgb)
+      const h = songHue(song), sat = 0.6, l = 0.45, k = (n) => (n + h / 30) % 12;
+      const f = (n) => Math.round(255 * (l - sat * Math.min(l, 1 - l) * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1))));
+      col = `rgb(${f(0)},${f(8)},${f(4)})`;
+    }
+    tintCache.set(song.id, col);
+    return col;
+  }
+  async function updateTint(){
+    const song = songById(currentSongId);
+    currentTint = song && privacy.tint ? await songTint(song) : null;
+    applyTheme();
+  }
+
+  function saveBoost(){
+    savePref("bassOn", boost.bass ? "1" : "0");
+    savePref("bassLevel", String(boost.bassLevel));
+    savePref("ultraOn", boost.ultra ? "1" : "0");
+    savePref("maxOn", boost.max ? "1" : "0");
+    applyBoost(); applyTheme();
+  }
+  function saveFx(){
+    savePref("fxOn", fx.on ? "1" : "0");
+    savePref("fxPulse", fx.pulse ? "1" : "0");
+    savePref("colBass", fx.colors.bass); savePref("colUltra", fx.colors.ultra); savePref("colMax", fx.colors.max);
+    applyTheme();
+  }
+
+  /* ================= Settings sheet ================= */
+  function openSettings(){
+    const chk = (id, on) => `<input type="checkbox" id="${id}" ${on ? "checked" : ""}>`;
+    showSheet(`<h3>Settings</h3>
+      <h4>Boost</h4>
+      <label class="setRow"><span>Bass boost<small>Louder, punchier beats and deep bass (10 = maximum)</small></span>${chk("sBass", boost.bass)}</label>
+      <div class="setRow"><span style="flex:none">Level</span><input type="range" id="sBassLvl" min="1" max="10" step="1" value="${boost.bassLevel}"><output id="sBassOut">${boost.bassLevel}</output></div>
+      <label class="setRow"><span>Ultra boost<small>About 50% louder</small></span>${chk("sUltra", boost.ultra)}</label>
+      <label class="setRow"><span>Max boost<small>The absolute loudest it can go</small></span>${chk("sMax", boost.max)}</label>
+      <div class="sheetNote">Turn the volume down before trying Max boost. On some iPhones boosted audio can stop when the screen locks; turn boosts off if that happens. After turning every boost off, reopen the app to fully return to normal playback.</div>
+      <h4>Notifications</h4>
+      <label class="setRow"><span>Let notifications through<small>On: music dips for alerts, then comes back. Off: music stays at full volume.</small></span>${chk("sDuck", notif.duck)}</label>
+      <h4>Privacy</h4>
+      <label class="setRow"><span>HIDE SONG<small>Hide the song name and cover on the lock screen / home screen player</small></span>${chk("sHide", privacy.hide)}</label>
+      <label class="setRow"><span>HIDE SONG MAX<small>Hide every song name in the whole app, only the first letter shows</small></span>${chk("sHideMax", privacy.max)}</label>
+      <h4>Look</h4>
+      <label class="setRow"><span>Song colour background<small>Tint the background with the playing song's cover colour</small></span>${chk("sTint", privacy.tint)}</label>
+      <h4>Boost colours</h4>
+      <label class="setRow"><span>Colour theme<small>Tint the app while a boost is on</small></span>${chk("sFx", fx.on)}</label>
+      <label class="setRow"><span>Pulsing<small>Turn off if the app feels slow</small></span>${chk("sPulse", fx.pulse)}</label>
+      <label class="setRow"><span>Bass boost colour</span><input type="color" id="sColBass" value="${fx.colors.bass}"></label>
+      <label class="setRow"><span>Ultra boost colour</span><input type="color" id="sColUltra" value="${fx.colors.ultra}"></label>
+      <label class="setRow"><span>Max boost colour</span><input type="color" id="sColMax" value="${fx.colors.max}"></label>
+      <div class="sheetAction" id="sColReset" style="color:var(--ink-dim)">Reset colours</div>
+      <h4>Library</h4>
+      <div class="sheetAction" id="sBackup">Back up library…<small style="display:block;color:var(--ink-dim);font-size:12px;margin-top:2px">Save all songs and playlists to one file</small></div>
+      <div class="sheetAction" id="sRestore">Restore from backup…<small style="display:block;color:var(--ink-dim);font-size:12px;margin-top:2px">Use this when moving to a new phone or new web address</small></div>
+      <input type="file" id="restoreInput" accept=".sealbackup,application/octet-stream">`);
+
+    $("sBass").addEventListener("change", e => { boost.bass = e.target.checked; saveBoost(); });
+    $("sBassLvl").addEventListener("input", e => {
+      boost.bassLevel = Number(e.target.value); $("sBassOut").textContent = boost.bassLevel;
+      if (!boost.bass){ boost.bass = true; $("sBass").checked = true; }
+      saveBoost();
+    });
+    $("sUltra").addEventListener("change", e => {
+      boost.ultra = e.target.checked; if (boost.ultra){ boost.max = false; $("sMax").checked = false; } saveBoost();
+    });
+    $("sMax").addEventListener("change", e => {
+      boost.max = e.target.checked; if (boost.max){ boost.ultra = false; $("sUltra").checked = false; } saveBoost();
+    });
+    $("sFx").addEventListener("change", e => { fx.on = e.target.checked; saveFx(); });
+    $("sDuck").addEventListener("change", e => { notif.duck = e.target.checked; savePref("duckOn", notif.duck ? "1" : "0"); applyAudioSession(); });
+    const savePrivacy = () => {
+      savePref("hideSong", privacy.hide ? "1" : "0"); savePref("hideSongMax", privacy.max ? "1" : "0"); savePref("artTint", privacy.tint ? "1" : "0");
+      renderCurrentView(); updateNowPlayingUI();
+      const s = songById(currentSongId); if (s) updateMediaSession(s);
+    };
+    $("sHide").addEventListener("change", e => { privacy.hide = e.target.checked; savePrivacy(); });
+    $("sHideMax").addEventListener("change", e => { privacy.max = e.target.checked; savePrivacy(); });
+    $("sTint").addEventListener("change", e => { privacy.tint = e.target.checked; savePrivacy(); updateTint(); });
+    $("sPulse").addEventListener("change", e => { fx.pulse = e.target.checked; saveFx(); });
+    [["sColBass","bass"],["sColUltra","ultra"],["sColMax","max"]].forEach(([id, k]) =>
+      $(id).addEventListener("input", e => { fx.colors[k] = e.target.value; saveFx(); }));
+    $("sColReset").addEventListener("click", () => {
+      Object.assign(fx.colors, BOOST_COLORS);
+      $("sColBass").value = fx.colors.bass; $("sColUltra").value = fx.colors.ultra; $("sColMax").value = fx.colors.max;
+      saveFx();
+    });
+    $("sBackup").addEventListener("click", backupLibrary);
+    $("sRestore").addEventListener("click", () => $("restoreInput").click());
+    $("restoreInput").addEventListener("change", e => { const f = e.target.files && e.target.files[0]; if (f) restoreLibrary(f); });
+  }
+
+  /* ================= Backup / restore ================= */
+  // File = "SEALBK1\n" + 12-digit header length + JSON header + raw song/art bytes.
+  // Built from Blob slices, so even big libraries aren't loaded into memory at once.
+  const BK_MAGIC = "SEALBK1\n";
+  async function backupLibrary(){
+    if (!songs.length){ toast("Library is empty"); return; }
+    toast("Preparing backup…");
+    const parts = [], meta = [];
+    let offset = 0;
+    const addPart = (b) => { const o = offset; parts.push(b); offset += b.size; return { offset: o, size: b.size, type: b.type || "" }; };
+    for (const s of songs){
+      if (!s.blob) continue;
+      meta.push({
+        id: s.id, name: s.name, addedAt: s.addedAt, duration: s.duration || null, ytId: s.ytId || null,
+        audio: addPart(s.blob), art: s.art ? addPart(s.art) : null,
+      });
+    }
+    const header = new TextEncoder().encode(JSON.stringify({ v: 1, created: Date.now(), songs: meta, playlists }));
+    const file = new File([BK_MAGIC, String(header.length).padStart(12, "0"), header, ...parts],
+      `seal-library-${new Date().toISOString().slice(0,10)}.sealbackup`, { type: "application/octet-stream" });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: "Seal library backup" });
+        toast("Backup saved");
+        return;
+      }
+    } catch (err) { if (err && err.name === "AbortError") return; }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file); a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    toast("Backup downloaded");
+  }
+
+  async function restoreLibrary(file){
+    try {
+      const magic = await file.slice(0, BK_MAGIC.length).text();
+      if (magic !== BK_MAGIC) throw new Error("Not a Seal backup file");
+      const hStart = BK_MAGIC.length + 12;
+      const hLen = Number(await file.slice(BK_MAGIC.length, hStart).text());
+      const header = JSON.parse(await file.slice(hStart, hStart + hLen).text());
+      const base = hStart + hLen;
+      const piece = (p) => file.slice(base + p.offset, base + p.offset + p.size, p.type);
+      closeSheet();
+      toast("Restoring…");
+      const existing = new Map(songs.map(s => [s.name + "|" + (s.blob && s.blob.size), s.id]));
+      const idMap = new Map();
+      let added = 0;
+      for (const m of header.songs || []){
+        const key = m.name + "|" + m.audio.size;
+        if (existing.has(key)){ idMap.set(m.id, existing.get(key)); continue; }
+        // copy bytes out of the backup file so the song survives after the file is gone
+        const blob = new Blob([await piece(m.audio).arrayBuffer()], { type: m.audio.type });
+        const song = { name: m.name, blob, addedAt: m.addedAt || Date.now() };
+        if (m.duration) song.duration = m.duration;
+        if (m.ytId) song.ytId = m.ytId;
+        if (m.art) song.art = new Blob([await piece(m.art).arrayBuffer()], { type: m.art.type || "image/jpeg" });
+        song.id = await Store.addSong(song);
+        songs.push(song); existing.set(key, song.id); idMap.set(m.id, song.id);
+        added++;
+      }
+      for (const p of header.playlists || []){
+        const ids = (p.songIds || []).map(id => idMap.get(id)).filter(id => id != null);
+        let pl = playlists.find(x => x.name === p.name);
+        if (pl){ ids.forEach(id => { if (!pl.songIds.includes(id)) pl.songIds.push(id); }); await Store.putPlaylist(pl); }
+        else { pl = { name: p.name, songIds: ids }; pl.id = await Store.addPlaylist(pl); playlists.push(pl); }
+      }
+      renderCurrentView();
+      toast(`Restored ${added} song${added === 1 ? "" : "s"}`);
+    } catch (err) {
+      toast((err && err.message) || "Restore failed");
+    }
+  }
+
+  /* ================= Song lengths for older songs ================= */
+  let probing = false;
+  async function fillMissingDurations(){
+    if (probing) return;
+    probing = true;
+    const probe = new Audio();
+    probe.preload = "metadata"; probe.muted = true;
+    let changed = 0;
+    try {
+      for (const s of songs.filter(s => !s.duration && s.blob)){
+        const url = URL.createObjectURL(s.blob);
+        const dur = await new Promise(res => {
+          const done = (v) => { clearTimeout(t); probe.onloadedmetadata = probe.onerror = null; res(v); };
+          const t = setTimeout(() => done(0), 6000);
+          probe.onloadedmetadata = () => done(probe.duration);
+          probe.onerror = () => done(0);
+          probe.src = url;
+        });
+        URL.revokeObjectURL(url);
+        if (isFinite(dur) && dur > 0 && songById(s.id)){
+          s.duration = dur;
+          await reqToPromise(tx("songs","readwrite").put(s)).catch(() => {});
+          changed++;
+          if (changed % 10 === 0) renderCurrentView();
+        }
+      }
+    } finally {
+      probe.removeAttribute("src"); probing = false;
+      if (changed) renderCurrentView();
+    }
   }
 
   /* ---- control wiring ---- */
-  document.getElementById("miniPlayPause").addEventListener("click", playPause);
-  document.getElementById("miniNext").addEventListener("click", () => nextTrack(false));
-  document.getElementById("playBtn").addEventListener("click", playPause);
-  document.getElementById("prevBtn").addEventListener("click", prevTrack);
-  document.getElementById("nextBtn").addEventListener("click", () => nextTrack(false));
-  document.getElementById("rewindBtn").addEventListener("click", () => { audio.currentTime = Math.max(0, audio.currentTime - 15); });
-  document.getElementById("forwardBtn").addEventListener("click", () => { audio.currentTime = Math.min(audio.duration||0, audio.currentTime + 15); });
-  document.getElementById("shuffleBtn").addEventListener("click", toggleShuffle);
-  document.getElementById("repeatBtn").addEventListener("click", cycleRepeat);
-  document.getElementById("addToPlaylistFromPlayer").addEventListener("click", () => {
-    if (currentSongId) openAddToPlaylistPicker(currentSongId);
-  });
+  $("settingsBtn").addEventListener("click", openSettings);
+  $("boostBtn").addEventListener("click", openSettings);
+  $("stopBtn").addEventListener("click", stopPlayback);
+  $("miniPlayPause").addEventListener("click", playPause);
+  $("miniNext").addEventListener("click", nextTrack);
+  $("playBtn").addEventListener("click", playPause);
+  $("prevBtn").addEventListener("click", prevTrack);
+  $("nextBtn").addEventListener("click", nextTrack);
+  $("rewindBtn").addEventListener("click", () => seekBy(-15));
+  $("forwardBtn").addEventListener("click", () => seekBy(15));
+  $("shuffleBtn").addEventListener("click", toggleShuffle);
+  $("repeatBtn").addEventListener("click", cycleRepeat);
+  $("queueBtn").addEventListener("click", openQueueSheet);
+  $("addToPlaylistFromPlayer").addEventListener("click", () => { if (currentSongId != null) openAddToPlaylistPicker([currentSongId]); });
 
-  /* ---- full player open/close ---- */
-  const fullPlayer = document.getElementById("fullPlayer");
-  document.getElementById("miniPlayer").addEventListener("click", (e) => {
-    if (e.target.closest(".miniBtn")) return;
-    fullPlayer.classList.add("show");
-  });
-  document.getElementById("collapseBtn").addEventListener("click", () => fullPlayer.classList.remove("show"));
+  const fullPlayer = $("fullPlayer");
+  function openFull(){ fullPlayer.classList.add("show"); fullOpen = true; lastSec = -1; updateProgress(); }
+  function closeFull(){ fullPlayer.classList.remove("show"); fullOpen = false; }
+  $("miniPlayer").addEventListener("click", (e) => { if (!e.target.closest(".miniBtn")) openFull(); });
+  $("collapseBtn").addEventListener("click", closeFull);
+  $("fpBack").addEventListener("click", closeFull);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden){ lastSec = -1; if (fullOpen) updateProgress(); } });
 
   /* ================= Boot ================= */
+  // register first so the app is saved for offline use even if storage fails to open
+  if ("serviceWorker" in navigator) setupUpdates();
+
+  /* ================= Updates ================= */
+  // Check for a new version whenever we're online; offer it, and apply it after 30s if ignored.
+  function setupUpdates(){
+    const sw = navigator.serviceWorker;
+    let reg = null, timer = null, shownFor = null;
+    const overlay = $("updateOverlay");
+
+    function hide(){ clearInterval(timer); overlay.classList.remove("show"); }
+    function apply(){
+      hide();
+      if (reg && reg.waiting) reg.waiting.postMessage("update");
+    }
+    function offer(){
+      const w = reg && reg.waiting;
+      if (!w || !sw.controller || shownFor === w) return;
+      shownFor = w;
+      let left = 30;
+      $("updateCount").textContent = left;
+      overlay.classList.add("show");
+      clearInterval(timer);
+      timer = setInterval(() => {
+        left--; $("updateCount").textContent = left;
+        if (left <= 0) apply();
+      }, 1000);
+    }
+    function check(){
+      if (!reg || !navigator.onLine) return;
+      reg.update().then(offer, () => {});
+    }
+
+    $("updateNow").addEventListener("click", apply);
+    // "Later" asks again the next time the app is opened or comes back online
+    $("updateLater").addEventListener("click", () => { hide(); shownFor = null; });
+
+    let reloading = false;
+    sw.addEventListener("controllerchange", () => {
+      if (reloading || !shownFor) return;
+      reloading = true; location.reload();
+    });
+
+    sw.register("sw.js", { updateViaCache: "none" }).then((r) => {
+      reg = r;
+      r.addEventListener("updatefound", () => {
+        const w = r.installing;
+        if (w) w.addEventListener("statechange", () => { if (w.state === "installed") offer(); });
+      });
+      offer();
+      check();
+    }).catch(() => {});
+
+    window.addEventListener("online", check);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") check(); });
+    setInterval(check, 30 * 60 * 1000);
+  }
   async function boot(){
+    updateModeUI();
+    applyTheme();
+    applyAudioSession();
     db = await openDB();
     songs = await Store.allSongs();
     playlists = await Store.allPlaylists();
     renderCurrentView();
-
-    if ("serviceWorker" in navigator){
-      navigator.serviceWorker.register("sw.js").catch(()=>{});
-    }
+    // ask the browser not to evict saved songs when the device is low on space
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+    setTimeout(fillMissingDurations, 3000);
   }
-  boot();
-
+  boot().catch(err => { libraryListEl.innerHTML = `<div class="empty"><b>Storage error</b>${escapeHtml(err && err.message || err)}</div>`; });
 })();
 </script>
 </body>

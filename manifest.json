@@ -1,15 +1,29 @@
 {
-  "name": "Crate Player",
-  "short_name": "Crate",
-  "description": "Play songs stored in your Files app, organized into playlists.",
-  "start_url": "./index.html",
+  "name": "Seal Music Player",
+  "short_name": "Seal",
+  "description": "Play songs stored on your device, with playlists, queue, shuffle and loop.",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f0e0c",
-  "theme_color": "#0f0e0c",
+  "background_color": "#0c0f10",
+  "theme_color": "#0c0f10",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

@@ -1,0 +1,18 @@
+[Unit]
+Description=Seal Music Player YouTube backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Edit User and the two paths to match your laptop.
+User=seeyal
+WorkingDirectory=/home/seeyal/pwamusic/server
+Environment=API_KEY=CHANGE_ME_to_a_password
+# Optional: path to a YouTube cookies.txt to avoid bot checks
+# Environment=YT_COOKIES=/home/seeyal/pwamusic/server/cookies.txt
+ExecStart=/home/seeyal/pwamusic/server/.venv/bin/uvicorn app:app --host 127.0.0.1 --port 8099
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

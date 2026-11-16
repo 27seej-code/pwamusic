@@ -1,6 +1,16 @@
-# Crate Player
+# Seal Music Player
 
 A simple installable web app for playing your own audio files, with playlists, shuffle, repeat, and 15-second skip.
+
+## Add songs from YouTube (laptop server)
+
+Tap the **YouTube** button to search and download audio straight into your
+library. This talks to a small backend that runs on your own laptop (it uses
+`yt-dlp`), exposed over `https://` with a Cloudflare tunnel. The code and full
+setup steps are in [`server/`](server/).
+
+First use: tap YouTube → enter the **Server URL** (your Cloudflare tunnel URL)
+and the **Password** (the server's `API_KEY`). These are saved on the device.
 
 ## Important: you must host this, you can't just open the file
 
